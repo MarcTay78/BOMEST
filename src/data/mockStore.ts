@@ -29,12 +29,12 @@ let priceHistory: PriceHistoryPoint[] = [
 ];
 
 let products: Product[] = [
-  { id: 'p1', name: 'Oslo Dining Table', category: 'table', photoUrl: null, laborCost: 120, createdAt: '2026-01-05' },
-  { id: 'p2', name: 'Windsor Side Chair', category: 'chair', photoUrl: null, laborCost: 45, createdAt: '2026-01-05' },
-  { id: 'p3', name: 'Nordic Extendable Table', category: 'table', photoUrl: null, laborCost: 150, createdAt: '2026-02-01' },
-  { id: 'p4', name: 'Harper Ladder-Back Chair', category: 'chair', photoUrl: null, laborCost: 38, createdAt: '2026-02-01' },
-  { id: 'p5', name: 'Farmhouse Bench Table', category: 'table', photoUrl: null, laborCost: 95, createdAt: '2026-03-01' },
-  { id: 'p6', name: 'Café Chair', category: 'chair', photoUrl: null, laborCost: 0, createdAt: '2026-03-01' },
+  { id: 'p1', name: 'Oslo Dining Table', category: 'table', photoUrl: null, laborCost: 120, obsolete: false, createdAt: '2026-01-05' },
+  { id: 'p2', name: 'Windsor Side Chair', category: 'chair', photoUrl: null, laborCost: 45, obsolete: false, createdAt: '2026-01-05' },
+  { id: 'p3', name: 'Nordic Extendable Table', category: 'table', photoUrl: null, laborCost: 150, obsolete: false, createdAt: '2026-02-01' },
+  { id: 'p4', name: 'Harper Ladder-Back Chair', category: 'chair', photoUrl: null, laborCost: 38, obsolete: false, createdAt: '2026-02-01' },
+  { id: 'p5', name: 'Farmhouse Bench Table', category: 'table', photoUrl: null, laborCost: 95, obsolete: false, createdAt: '2026-03-01' },
+  { id: 'p6', name: 'Café Chair', category: 'chair', photoUrl: null, laborCost: 0, obsolete: false, createdAt: '2026-03-01' },
 ];
 
 let bomLines: BomLine[] = [
@@ -116,7 +116,7 @@ export const mockStore: DataStore = {
     return products.find((p) => p.id === id) ?? null;
   },
   async createProduct(input) {
-    const product: Product = { ...input, id: newId('p'), photoUrl: null, laborCost: 0, createdAt: today() };
+    const product: Product = { ...input, id: newId('p'), photoUrl: null, laborCost: 0, obsolete: false, createdAt: today() };
     products = [...products, product];
     return product;
   },
@@ -126,6 +126,17 @@ export const mockStore: DataStore = {
     const updated = { ...product, laborCost };
     products = products.map((p) => (p.id === id ? updated : p));
     return updated;
+  },
+  async updateProduct(id, patch) {
+    const product = products.find((p) => p.id === id);
+    if (!product) throw new Error('Product not found.');
+    const updated = { ...product, ...patch };
+    products = products.map((p) => (p.id === id ? updated : p));
+    return updated;
+  },
+  async deleteProduct(id) {
+    products = products.filter((p) => p.id !== id);
+    bomLines = bomLines.filter((l) => l.productId !== id);
   },
   async uploadPhoto(productId, file) {
     const url = URL.createObjectURL(file);

@@ -68,14 +68,17 @@ export function ProductList() {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 18 }}>
           {rows.map(({ product, cost }) => (
-            <Link key={product.id} to={`/products/${product.id}`} className="card elev-sm" style={{ padding: 0, overflow: 'hidden', textDecoration: 'none', color: 'inherit' }}>
+            <Link key={product.id} to={`/products/${product.id}`} className="card elev-sm" style={{ padding: 0, overflow: 'hidden', textDecoration: 'none', color: 'inherit', opacity: product.obsolete ? 0.6 : 1 }}>
               <div className="photo-slot" style={{ height: 150, borderRadius: 0 }}>
                 {product.photoUrl ? <img src={product.photoUrl} alt={product.name} /> : <span>Drop product photo</span>}
               </div>
               <div style={{ padding: '14px 16px 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <span className={`tag ${product.category === 'table' ? 'tag-accent' : 'tag-accent-2'}`} style={{ width: 'fit-content' }}>
-                  {product.category === 'table' ? 'Table' : 'Chair'}
-                </span>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <span className={`tag ${product.category === 'table' ? 'tag-accent' : 'tag-accent-2'}`} style={{ width: 'fit-content' }}>
+                    {product.category === 'table' ? 'Table' : 'Chair'}
+                  </span>
+                  {product.obsolete && <span className="tag tag-outline">Obsolete</span>}
+                </div>
                 <div className="card-title">{product.name}</div>
                 <div style={{ fontFamily: 'var(--font-heading)', fontSize: 20, color: 'var(--color-accent-700)' }}>{formatCurrency(cost.total)}</div>
               </div>

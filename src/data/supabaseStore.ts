@@ -25,6 +25,7 @@ const toProduct = (row: any): Product => ({
   category: row.category,
   photoUrl: row.photo_url,
   laborCost: Number(row.labor_cost),
+  obsolete: row.obsolete,
   createdAt: row.created_at,
 });
 
@@ -149,6 +150,18 @@ export const supabaseStore: DataStore = {
     const { data, error } = await requireClient().from('products').update({ labor_cost: laborCost }).eq('id', id).select().single();
     if (error) throw error;
     return toProduct(data);
+  },
+  async updateProduct(id, patch) {
+    const dbPatch: Record<string, unknown> = {};
+    if (patch.name !== undefined) dbPatch.name = patch.name;
+    if (patch.obsolete !== undefined) dbPatch.obsolete = patch.obsolete;
+    const { data, error } = await requireClient().from('products').update(dbPatch).eq('id', id).select().single();
+    if (error) throw error;
+    return toProduct(data);
+  },
+  async deleteProduct(id) {
+    const { error } = await requireClient().from('products').delete().eq('id', id);
+    if (error) throw error;
   },
   async uploadPhoto(productId, file) {
     const client = requireClient();

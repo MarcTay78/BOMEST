@@ -32,6 +32,7 @@ export interface Product {
   category: ProductCategory;
   photoUrl: string | null;
   laborCost: number;
+  obsolete: boolean;
   createdAt: string;
 }
 

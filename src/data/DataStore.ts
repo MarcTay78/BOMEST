@@ -18,6 +18,9 @@ export interface DataStore {
   getProduct(id: string): Promise<Product | null>;
   createProduct(input: { name: string; category: Product['category'] }): Promise<Product>;
   updateProductLabor(id: string, laborCost: number): Promise<Product>;
+  updateProduct(id: string, patch: Partial<Pick<Product, 'name' | 'obsolete'>>): Promise<Product>;
+  /** Also removes the product's bom_lines (cascade). */
+  deleteProduct(id: string): Promise<void>;
   uploadPhoto(productId: string, file: File): Promise<string>;
 
   listBomLines(productId: string): Promise<BomLine[]>;
