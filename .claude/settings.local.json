@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create *)",
+      "Bash(cp -n _scaffold/.gitignore .)",
+      "Bash(cp -r _scaffold/. .)",
+      "Bash(rm -rf _scaffold)"
+    ]
+  }
+}

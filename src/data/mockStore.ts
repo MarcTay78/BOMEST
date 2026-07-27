@@ -1,0 +1,147 @@
+import type { BomLine, Material, PriceHistoryPoint, Product, Session } from '../lib/types';
+import { DeleteBlockedError, type DataStore } from './DataStore';
+
+// ponytail: in-memory only, resets on reload. Swap to supabaseStore by setting
+// VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY in .env — see src/data/index.ts.
+
+const MOCK_USERS: Record<string, { password: string; role: Session['role'] }> = {
+  'maria@bomest.co': { password: 'bomest123', role: 'admin' },
+  'viewer@bomest.co': { password: 'bomest123', role: 'viewer' },
+};
+const SESSION_KEY = 'bomest_mock_session';
+
+let materials: Material[] = [
+  { id: 'm1', name: 'Oak Lumber', category: 'wood', unit: 'm3', currentPrice: 850, updatedAt: '2026-07-12' },
+  { id: 'm2', name: 'Walnut Lumber', category: 'wood', unit: 'm3', currentPrice: 1450, updatedAt: '2026-07-12' },
+  { id: 'm3', name: 'Maple Lumber', category: 'wood', unit: 'm3', currentPrice: 980, updatedAt: '2026-06-28' },
+  { id: 'm4', name: 'Steel Bracket', category: 'hardware', unit: 'pcs', currentPrice: 2.1, updatedAt: '2026-07-03' },
+  { id: 'm5', name: 'Wood Screw 40mm', category: 'hardware', unit: 'pcs', currentPrice: 0.08, updatedAt: '2026-07-03' },
+  { id: 'm6', name: 'Danish Oil Finish', category: 'finish', unit: 'L', currentPrice: 18.5, updatedAt: '2026-05-20' },
+  { id: 'm7', name: 'Felt Pads', category: 'packaging', unit: 'pcs', currentPrice: 0.35, updatedAt: '2026-06-02' },
+  { id: 'm8', name: 'Corrugated Box — Large', category: 'packaging', unit: 'pcs', currentPrice: 4.2, updatedAt: '2026-06-02' },
+];
+
+let priceHistory: PriceHistoryPoint[] = [
+  { id: 'h1', materialId: 'm1', oldPrice: 720, changedAt: '2026-01-15' },
+  { id: 'h2', materialId: 'm1', oldPrice: 760, changedAt: '2026-03-10' },
+  { id: 'h3', materialId: 'm1', oldPrice: 800, changedAt: '2026-05-08' },
+  { id: 'h4', materialId: 'm1', oldPrice: 820, changedAt: '2026-07-01' },
+];
+
+let products: Product[] = [
+  { id: 'p1', name: 'Oslo Dining Table', category: 'table', photoUrl: null, laborCost: 120, createdAt: '2026-01-05' },
+  { id: 'p2', name: 'Windsor Side Chair', category: 'chair', photoUrl: null, laborCost: 45, createdAt: '2026-01-05' },
+  { id: 'p3', name: 'Nordic Extendable Table', category: 'table', photoUrl: null, laborCost: 150, createdAt: '2026-02-01' },
+  { id: 'p4', name: 'Harper Ladder-Back Chair', category: 'chair', photoUrl: null, laborCost: 38, createdAt: '2026-02-01' },
+  { id: 'p5', name: 'Farmhouse Bench Table', category: 'table', photoUrl: null, laborCost: 95, createdAt: '2026-03-01' },
+  { id: 'p6', name: 'Café Chair', category: 'chair', photoUrl: null, laborCost: 0, createdAt: '2026-03-01' },
+];
+
+let bomLines: BomLine[] = [
+  { id: 'b1', productId: 'p1', materialId: 'm1', quantity: 0.18 },
+  { id: 'b2', productId: 'p1', materialId: 'm6', quantity: 0.4 },
+  { id: 'b3', productId: 'p1', materialId: 'm8', quantity: 1 },
+  { id: 'b4', productId: 'p2', materialId: 'm2', quantity: 0.03 },
+  { id: 'b5', productId: 'p2', materialId: 'm4', quantity: 4 },
+  { id: 'b6', productId: 'p2', materialId: 'm5', quantity: 12 },
+  { id: 'b7', productId: 'p2', materialId: 'm7', quantity: 4 },
+  { id: 'b8', productId: 'p3', materialId: 'm1', quantity: 0.24 },
+  { id: 'b9', productId: 'p3', materialId: 'm4', quantity: 2 },
+  { id: 'b10', productId: 'p3', materialId: 'm6', quantity: 0.5 },
+  { id: 'b11', productId: 'p3', materialId: 'm8', quantity: 1 },
+  { id: 'b12', productId: 'p4', materialId: 'm3', quantity: 0.025 },
+  { id: 'b13', productId: 'p4', materialId: 'm5', quantity: 10 },
+  { id: 'b14', productId: 'p4', materialId: 'm7', quantity: 4 },
+  { id: 'b15', productId: 'p5', materialId: 'm1', quantity: 0.15 },
+  { id: 'b16', productId: 'p5', materialId: 'm6', quantity: 0.3 },
+  { id: 'b17', productId: 'p5', materialId: 'm8', quantity: 1 },
+];
+
+let nextId = 100;
+const newId = (prefix: string) => `${prefix}${nextId++}`;
+const today = () => new Date().toISOString().slice(0, 10);
+
+export const mockStore: DataStore = {
+  async signIn(email, password) {
+    const user = MOCK_USERS[email.toLowerCase()];
+    if (!user || user.password !== password) throw new Error('Invalid email or password.');
+    const session: Session = { email, role: user.role };
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    return session;
+  },
+  async signOut() {
+    sessionStorage.removeItem(SESSION_KEY);
+  },
+  async getSession() {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    return raw ? (JSON.parse(raw) as Session) : null;
+  },
+
+  async listMaterials() {
+    return [...materials];
+  },
+  async createMaterial(input) {
+    const material: Material = { ...input, id: newId('m'), updatedAt: today() };
+    materials = [...materials, material];
+    return material;
+  },
+  async updateMaterialPrice(id, newPrice) {
+    const material = materials.find((m) => m.id === id);
+    if (!material) throw new Error('Material not found.');
+    priceHistory = [...priceHistory, { id: newId('h'), materialId: id, oldPrice: material.currentPrice, changedAt: today() }];
+    const updated = { ...material, currentPrice: newPrice, updatedAt: today() };
+    materials = materials.map((m) => (m.id === id ? updated : m));
+    return updated;
+  },
+  async updateMaterial(id, patch) {
+    const material = materials.find((m) => m.id === id);
+    if (!material) throw new Error('Material not found.');
+    const updated = { ...material, ...patch, updatedAt: today() };
+    materials = materials.map((m) => (m.id === id ? updated : m));
+    return updated;
+  },
+  async deleteMaterial(id) {
+    const usedByCount = bomLines.filter((l) => l.materialId === id).length;
+    if (usedByCount > 0) throw new DeleteBlockedError(usedByCount);
+    materials = materials.filter((m) => m.id !== id);
+  },
+  async getPriceHistory(materialId) {
+    return priceHistory.filter((h) => h.materialId === materialId).sort((a, b) => a.changedAt.localeCompare(b.changedAt));
+  },
+
+  async listProducts() {
+    return [...products];
+  },
+  async getProduct(id) {
+    return products.find((p) => p.id === id) ?? null;
+  },
+  async createProduct(input) {
+    const product: Product = { ...input, id: newId('p'), photoUrl: null, laborCost: 0, createdAt: today() };
+    products = [...products, product];
+    return product;
+  },
+  async updateProductLabor(id, laborCost) {
+    const product = products.find((p) => p.id === id);
+    if (!product) throw new Error('Product not found.');
+    const updated = { ...product, laborCost };
+    products = products.map((p) => (p.id === id ? updated : p));
+    return updated;
+  },
+  async uploadPhoto(productId, file) {
+    const url = URL.createObjectURL(file);
+    products = products.map((p) => (p.id === productId ? { ...p, photoUrl: url } : p));
+    return url;
+  },
+
+  async listBomLines(productId) {
+    return bomLines.filter((l) => l.productId === productId);
+  },
+  async addBomLine(productId, materialId, quantity) {
+    const line: BomLine = { id: newId('b'), productId, materialId, quantity };
+    bomLines = [...bomLines, line];
+    return line;
+  },
+  async removeBomLine(id) {
+    bomLines = bomLines.filter((l) => l.id !== id);
+  },
+};
