@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useIsAdmin } from '../auth/AuthContext';
 import { EditIcon, PlusIcon, TrashIcon, WarningIcon } from '../components/icons';
 import { OptionSelect } from '../components/OptionSelect';
@@ -26,6 +26,8 @@ const draftFrom = (m: Material): Draft => ({
   price: String(m.currentPrice),
 });
 
+type SortKey = 'type' | 'size' | 'unit';
+
 export function Materials() {
   const isAdmin = useIsAdmin();
   const [materials, setMaterials] = useState<Material[]>([]);
@@ -33,11 +35,30 @@ export function Materials() {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [adding, setAdding] = useState(false);
   const [blockedMessage, setBlockedMessage] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
   const reload = () => dataStore.listMaterials().then(setMaterials);
   useEffect(() => {
     reload();
   }, []);
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey !== key) {
+      setSortKey(key);
+      setSortDir('asc');
+    } else {
+      setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+    }
+  };
+
+  const sortedMaterials = useMemo(() => {
+    if (!sortKey) return materials;
+    const sorted = [...materials].sort((a, b) => a[sortKey].localeCompare(b[sortKey]));
+    return sortDir === 'asc' ? sorted : sorted.reverse();
+  }, [materials, sortKey, sortDir]);
+
+  const sortIndicator = (key: SortKey) => (sortKey === key ? (sortDir === 'asc' ? ' ↑' : ' ↓') : '');
 
   const startEdit = (m: Material) => {
     setEditingId(m.id);
@@ -90,13 +111,16 @@ export function Materials() {
         <table className="table">
           <thead>
             <tr>
-              <th>Name</th><th>Category</th><th>Items</th><th>Type</th><th>Size</th><th>Unit</th>
+              <th>Name</th><th>Category</th><th>Items</th>
+              <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort('type')}>Type{sortIndicator('type')}</th>
+              <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort('size')}>Size{sortIndicator('size')}</th>
+              <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort('unit')}>Unit{sortIndicator('unit')}</th>
               <th style={{ textAlign: 'right' }}>Current price</th><th>Updated</th>
               {isAdmin && <th></th>}
             </tr>
           </thead>
           <tbody>
-            {materials.map((m) => {
+            {sortedMaterials.map((m) => {
               const editing = editingId === m.id && draft;
               return (
                 <tr key={m.id}>
