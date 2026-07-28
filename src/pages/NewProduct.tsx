@@ -1,12 +1,12 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { OptionSelect } from '../components/OptionSelect';
 import { dataStore } from '../data';
-import type { Product } from '../lib/types';
 
 export function NewProduct() {
   const navigate = useNavigate();
   const [name, setName] = useState('');
-  const [category, setCategory] = useState<Product['category']>('table');
+  const [category, setCategory] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -27,11 +27,9 @@ export function NewProduct() {
         </div>
         <div className="field">
           <label htmlFor="category">Category</label>
-          <select id="category" className="input" value={category} onChange={(e) => setCategory(e.target.value as Product['category'])}>
-            <option value="table">Table</option>
-            <option value="chair">Chair</option>
-          </select>
+          <OptionSelect id="category" kind="product_categories" value={category} onChange={setCategory} />
         </div>
+        <Link to="/lists" style={{ fontSize: 12 }}>Manage categories</Link>
         <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
           {submitting ? 'Creating…' : 'Create product'}
         </button>

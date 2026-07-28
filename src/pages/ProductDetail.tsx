@@ -4,6 +4,7 @@ import { useIsAdmin } from '../auth/AuthContext';
 import { BomTable } from '../components/BomTable';
 import { CostBreakdown } from '../components/CostBreakdown';
 import { BackIcon, TrashIcon, WarningIcon } from '../components/icons';
+import { OptionSelect } from '../components/OptionSelect';
 import { PhotoUpload } from '../components/PhotoUpload';
 import { dataStore } from '../data';
 import { computeProductCost } from '../lib/costCalc';
@@ -79,6 +80,12 @@ export function ProductDetail() {
       reload();
     });
 
+  const changeCategory = (category: string) =>
+    runMutation(async () => {
+      await dataStore.updateProduct(product.id, { category });
+      reload();
+    });
+
   const handleDelete = () =>
     runMutation(async () => {
       if (!window.confirm(`Delete "${product.name}"? This removes its BOM lines too and can't be undone.`)) return;
@@ -109,8 +116,12 @@ export function ProductDetail() {
               })
             }
           />
-          <div style={{ marginTop: 10, display: 'flex', gap: 6 }}>
-            <span className="tag tag-accent">{product.category === 'table' ? 'Table' : 'Chair'}</span>
+          <div style={{ marginTop: 10, display: 'flex', gap: 6, alignItems: 'center' }}>
+            {isAdmin ? (
+              <OptionSelect kind="product_categories" value={product.category} onChange={changeCategory} style={{ minHeight: 30, width: 'auto' }} />
+            ) : (
+              product.category && <span className="tag tag-accent">{product.category}</span>
+            )}
             {product.obsolete && <span className="tag tag-outline">Obsolete</span>}
           </div>
           {isAdmin && editingName ? (

@@ -5,20 +5,26 @@ export interface RankingRow {
   id: string;
   name: string;
   total: number;
-  category: 'table' | 'chair';
+  category: string;
 }
 
-const CATEGORY_COLOR: Record<'table' | 'chair', string> = {
-  table: 'var(--color-accent-500)',
-  chair: 'var(--color-accent-2-500)',
-};
-
-export const CATEGORY_LEGEND: { label: string; color: string }[] = [
-  { label: 'Table', color: CATEGORY_COLOR.table },
-  { label: 'Chair', color: CATEGORY_COLOR.chair },
+const PALETTE = [
+  'var(--color-accent-500)',
+  'var(--color-accent-2-500)',
+  'var(--color-neutral-600)',
+  'var(--color-accent-700)',
+  'var(--color-accent-2-700)',
+  'var(--color-neutral-400)',
 ];
 
+/** Stable color per category name, so the chart and its legend always agree. */
+export function buildCategoryColorMap(categories: string[]): Record<string, string> {
+  const unique = Array.from(new Set(categories)).sort();
+  return Object.fromEntries(unique.map((cat, i) => [cat, PALETTE[i % PALETTE.length]]));
+}
+
 export function CostRankingChart({ rows }: { rows: RankingRow[] }) {
+  const colorFor = buildCategoryColorMap(rows.map((r) => r.category));
   return (
     <ResponsiveContainer width="100%" height={Math.max(220, rows.length * 40)}>
       <BarChart data={rows} layout="vertical" margin={{ left: 8, right: 24 }}>
@@ -28,7 +34,7 @@ export function CostRankingChart({ rows }: { rows: RankingRow[] }) {
         <Tooltip formatter={(v) => formatCurrency(Number(v))} />
         <Bar dataKey="total" radius={[0, 6, 6, 0]}>
           {rows.map((row) => (
-            <Cell key={row.id} fill={CATEGORY_COLOR[row.category]} />
+            <Cell key={row.id} fill={colorFor[row.category]} />
           ))}
         </Bar>
       </BarChart>

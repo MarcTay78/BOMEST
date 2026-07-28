@@ -74,9 +74,7 @@ export function ProductList() {
               </div>
               <div style={{ padding: '14px 16px 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <div style={{ display: 'flex', gap: 6 }}>
-                  <span className={`tag ${product.category === 'table' ? 'tag-accent' : 'tag-accent-2'}`} style={{ width: 'fit-content' }}>
-                    {product.category === 'table' ? 'Table' : 'Chair'}
-                  </span>
+                  {product.category && <span className="tag tag-accent" style={{ width: 'fit-content' }}>{product.category}</span>}
                   {product.obsolete && <span className="tag tag-outline">Obsolete</span>}
                 </div>
                 <div className="card-title">{product.name}</div>

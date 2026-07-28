@@ -1,27 +1,31 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CATEGORY_LEGEND, CostRankingChart, type RankingRow } from '../components/charts/CostRankingChart';
+import { buildCategoryColorMap, CostRankingChart, type RankingRow } from '../components/charts/CostRankingChart';
 import { PriceTrendChart, type TrendPoint } from '../components/charts/PriceTrendChart';
 import { dataStore } from '../data';
 import { computeProductCost, formatCurrency } from '../lib/costCalc';
-import type { BomLine, Material, Product, ProductCategory } from '../lib/types';
-
-type CategoryFilter = 'all' | ProductCategory;
+import type { BomLine, Material, Product } from '../lib/types';
 
 export function Dashboard() {
   const [products, setProducts] = useState<Product[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [bomLinesByProduct, setBomLinesByProduct] = useState<Record<string, BomLine[]>>({});
-  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
+  const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState('all');
   const [selectedMaterialId, setSelectedMaterialId] = useState('');
   const [trendPoints, setTrendPoints] = useState<TrendPoint[]>([]);
 
   useEffect(() => {
     (async () => {
-      const [productList, materialList] = await Promise.all([dataStore.listProducts(), dataStore.listMaterials()]);
+      const [productList, materialList, categoryList] = await Promise.all([
+        dataStore.listProducts(),
+        dataStore.listMaterials(),
+        dataStore.listOptions('product_categories'),
+      ]);
       const bomEntries = await Promise.all(productList.map((p) => dataStore.listBomLines(p.id).then((lines) => [p.id, lines] as const)));
       setProducts(productList);
       setMaterials(materialList);
       setBomLinesByProduct(Object.fromEntries(bomEntries));
+      setCategoryOptions(categoryList.map((c) => c.name));
       if (materialList.length > 0) setSelectedMaterialId(materialList[0].id);
     })();
   }, []);
@@ -39,6 +43,11 @@ export function Dashboard() {
       }))
       .sort((a, b) => b.total - a.total);
   }, [products, bomLinesByProduct, materialsById, categoryFilter]);
+
+  const legend = useMemo(() => {
+    const colorMap = buildCategoryColorMap(rankingRows.map((r) => r.category));
+    return Object.entries(colorMap);
+  }, [rankingRows]);
 
   useEffect(() => {
     if (!selectedMaterialId) {
@@ -65,22 +74,20 @@ export function Dashboard() {
         <div className="card elev-sm" style={{ padding: 22 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div className="card-title">Product cost ranking</div>
-            <div className="seg">
-              {(['all', 'table', 'chair'] as const).map((cat) => (
-                <label key={cat} className="seg-opt">
-                  <input type="radio" name="catf" checked={categoryFilter === cat} onChange={() => setCategoryFilter(cat)} />
-                  {cat === 'all' ? 'All' : cat === 'table' ? 'Tables' : 'Chairs'}
-                </label>
+            <select className="input" style={{ minHeight: 32, width: 'auto' }} value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+              <option value="all">All categories</option>
+              {categoryOptions.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
               ))}
-            </div>
+            </select>
           </div>
           <div style={{ marginTop: 18 }}>
             {rankingRows.length === 0 ? <p className="text-muted">No products yet.</p> : <CostRankingChart rows={rankingRows} />}
           </div>
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 20, fontSize: 11.5 }}>
-            {CATEGORY_LEGEND.map((l) => (
-              <span key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ width: 10, height: 10, borderRadius: 3, background: l.color, display: 'inline-block' }} />{l.label}
+            {legend.map(([label, color]) => (
+              <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ width: 10, height: 10, borderRadius: 3, background: color, display: 'inline-block' }} />{label}
               </span>
             ))}
           </div>

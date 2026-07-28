@@ -1,4 +1,4 @@
-import type { BomLine, Material, PriceHistoryPoint, Product, Session } from '../lib/types';
+import type { BomLine, ListKind, ListOption, Material, PriceHistoryPoint, Product, Session } from '../lib/types';
 import { DeleteBlockedError, type DataStore } from './DataStore';
 
 // ponytail: in-memory only, resets on reload. Swap to supabaseStore by setting
@@ -11,14 +11,14 @@ const MOCK_USERS: Record<string, { password: string; role: Session['role'] }> = 
 const SESSION_KEY = 'bomest_mock_session';
 
 let materials: Material[] = [
-  { id: 'm1', name: 'Oak Lumber', category: 'wood', unit: 'm3', currentPrice: 850, updatedAt: '2026-07-12' },
-  { id: 'm2', name: 'Walnut Lumber', category: 'wood', unit: 'm3', currentPrice: 1450, updatedAt: '2026-07-12' },
-  { id: 'm3', name: 'Maple Lumber', category: 'wood', unit: 'm3', currentPrice: 980, updatedAt: '2026-06-28' },
-  { id: 'm4', name: 'Steel Bracket', category: 'hardware', unit: 'pcs', currentPrice: 2.1, updatedAt: '2026-07-03' },
-  { id: 'm5', name: 'Wood Screw 40mm', category: 'hardware', unit: 'pcs', currentPrice: 0.08, updatedAt: '2026-07-03' },
-  { id: 'm6', name: 'Danish Oil Finish', category: 'finish', unit: 'L', currentPrice: 18.5, updatedAt: '2026-05-20' },
-  { id: 'm7', name: 'Felt Pads', category: 'packaging', unit: 'pcs', currentPrice: 0.35, updatedAt: '2026-06-02' },
-  { id: 'm8', name: 'Corrugated Box — Large', category: 'packaging', unit: 'pcs', currentPrice: 4.2, updatedAt: '2026-06-02' },
+  { id: 'm1', name: 'Oak Lumber', category: 'Wood', item: 'Lumber', type: 'S4S', size: '', unit: 'm3', currentPrice: 850, updatedAt: '2026-07-12' },
+  { id: 'm2', name: 'Walnut Lumber', category: 'Wood', item: 'Lumber', type: 'S4S', size: '', unit: 'm3', currentPrice: 1450, updatedAt: '2026-07-12' },
+  { id: 'm3', name: 'Maple Lumber', category: 'Wood', item: 'Lumber', type: 'RBW', size: '', unit: 'm3', currentPrice: 980, updatedAt: '2026-06-28' },
+  { id: 'm4', name: 'Steel Bracket', category: 'Hardware', item: 'Bracket', type: '', size: '', unit: 'pcs', currentPrice: 2.1, updatedAt: '2026-07-03' },
+  { id: 'm5', name: 'Wood Screw 40mm', category: 'Hardware', item: 'Screw', type: '', size: '40mm', unit: 'pcs', currentPrice: 0.08, updatedAt: '2026-07-03' },
+  { id: 'm6', name: 'Danish Oil Finish', category: 'Finish', item: 'Oil', type: '', size: '', unit: 'L', currentPrice: 18.5, updatedAt: '2026-05-20' },
+  { id: 'm7', name: 'Felt Pads', category: 'Packaging', item: 'Pads', type: '', size: '', unit: 'pcs', currentPrice: 0.35, updatedAt: '2026-06-02' },
+  { id: 'm8', name: 'Corrugated Box — Large', category: 'Packaging', item: 'Box', type: '', size: 'Large', unit: 'pcs', currentPrice: 4.2, updatedAt: '2026-06-02' },
 ];
 
 let priceHistory: PriceHistoryPoint[] = [
@@ -57,9 +57,60 @@ let bomLines: BomLine[] = [
   { id: 'b17', productId: 'p5', materialId: 'm8', quantity: 1 },
 ];
 
+let lists: Record<ListKind, ListOption[]> = {
+  product_categories: [
+    { id: 'pc1', name: 'table' },
+    { id: 'pc2', name: 'chair' },
+  ],
+  material_categories: [
+    { id: 'mc1', name: 'Wood' },
+    { id: 'mc2', name: 'Hardware' },
+    { id: 'mc3', name: 'Finish' },
+    { id: 'mc4', name: 'Packaging' },
+    { id: 'mc5', name: 'White Parts' },
+    { id: 'mc6', name: 'Cushion Seat' },
+  ],
+  material_items: [
+    { id: 'mi1', name: 'Lumber' },
+    { id: 'mi2', name: 'Bracket' },
+    { id: 'mi3', name: 'Screw' },
+    { id: 'mi4', name: 'Oil' },
+    { id: 'mi5', name: 'Pads' },
+    { id: 'mi6', name: 'Box' },
+    { id: 'mi7', name: 'Back Leg' },
+    { id: 'mi8', name: 'Foams' },
+  ],
+  material_types: [
+    { id: 'mt1', name: 'RBW' },
+    { id: 'mt2', name: 'S4S' },
+  ],
+};
+
 let nextId = 100;
 const newId = (prefix: string) => `${prefix}${nextId++}`;
 const today = () => new Date().toISOString().slice(0, 10);
+
+const OPTION_FIELD: Record<ListKind, { array: 'products' | 'materials'; field: string }> = {
+  product_categories: { array: 'products', field: 'category' },
+  material_categories: { array: 'materials', field: 'category' },
+  material_items: { array: 'materials', field: 'item' },
+  material_types: { array: 'materials', field: 'type' },
+};
+
+function usageCount(kind: ListKind, name: string): number {
+  const { array, field } = OPTION_FIELD[kind];
+  const rows: any[] = array === 'products' ? products : materials;
+  return rows.filter((r) => r[field] === name).length;
+}
+
+function cascadeRename(kind: ListKind, oldName: string, newName: string) {
+  const { array, field } = OPTION_FIELD[kind];
+  if (array === 'products') {
+    products = products.map((p) => ((p as any)[field] === oldName ? { ...p, [field]: newName } : p));
+  } else {
+    materials = materials.map((m) => ((m as any)[field] === oldName ? { ...m, [field]: newName } : m));
+  }
+}
 
 export const mockStore: DataStore = {
   async signIn(email, password) {
@@ -154,5 +205,34 @@ export const mockStore: DataStore = {
   },
   async removeBomLine(id) {
     bomLines = bomLines.filter((l) => l.id !== id);
+  },
+
+  async listOptions(kind) {
+    return [...lists[kind]];
+  },
+  async addOption(kind, name) {
+    const trimmed = name.trim();
+    const existing = lists[kind].find((o) => o.name === trimmed);
+    if (existing) return existing;
+    const option: ListOption = { id: newId('o'), name: trimmed };
+    lists = { ...lists, [kind]: [...lists[kind], option] };
+    return option;
+  },
+  async renameOption(kind, id, name) {
+    const option = lists[kind].find((o) => o.id === id);
+    if (!option) throw new Error('Not found.');
+    const trimmed = name.trim();
+    const oldName = option.name;
+    const updated = { ...option, name: trimmed };
+    lists = { ...lists, [kind]: lists[kind].map((o) => (o.id === id ? updated : o)) };
+    if (oldName !== trimmed) cascadeRename(kind, oldName, trimmed);
+    return updated;
+  },
+  async deleteOption(kind, id) {
+    const option = lists[kind].find((o) => o.id === id);
+    if (!option) return;
+    const count = usageCount(kind, option.name);
+    if (count > 0) throw new DeleteBlockedError(count, kind === 'product_categories' ? 'product' : 'material');
+    lists = { ...lists, [kind]: lists[kind].filter((o) => o.id !== id) };
   },
 };

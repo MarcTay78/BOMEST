@@ -1,9 +1,7 @@
-import type { BomLine, Material, MaterialCategory, Product } from './types';
-
-const CATEGORIES: MaterialCategory[] = ['wood', 'hardware', 'finish', 'packaging'];
+import type { BomLine, Material, Product } from './types';
 
 export interface CategoryBreakdown {
-  key: MaterialCategory | 'labor';
+  key: string;
   label: string;
   value: number;
 }
@@ -12,7 +10,8 @@ export interface ProductCost {
   materialsCost: number;
   laborCost: number;
   total: number;
-  categorySums: Record<MaterialCategory, number>;
+  /** Category totals in first-seen order among the BOM lines — categories are a free-form list now. */
+  categoryTotals: { category: string; total: number }[];
 }
 
 /** product.total_cost = SUM(bom_lines.quantity * materials.current_price) + product.labor_cost */
@@ -21,29 +20,29 @@ export function computeProductCost(
   bomLines: BomLine[],
   materialsById: Map<string, Material>,
 ): ProductCost {
-  const categorySums: Record<MaterialCategory, number> = { wood: 0, hardware: 0, finish: 0, packaging: 0 };
+  const order: string[] = [];
+  const sums = new Map<string, number>();
 
   for (const line of bomLines) {
     const material = materialsById.get(line.materialId);
     if (!material) continue;
-    categorySums[material.category] += line.quantity * material.currentPrice;
+    const category = material.category || 'Uncategorized';
+    if (!sums.has(category)) {
+      sums.set(category, 0);
+      order.push(category);
+    }
+    sums.set(category, sums.get(category)! + line.quantity * material.currentPrice);
   }
 
-  const materialsCost = CATEGORIES.reduce((sum, cat) => sum + categorySums[cat], 0);
-  return { materialsCost, laborCost: product.laborCost, total: materialsCost + product.laborCost, categorySums };
+  const categoryTotals = order.map((category) => ({ category, total: sums.get(category)! }));
+  const materialsCost = categoryTotals.reduce((sum, c) => sum + c.total, 0);
+  return { materialsCost, laborCost: product.laborCost, total: materialsCost + product.laborCost, categoryTotals };
 }
-
-const CATEGORY_LABELS: Record<MaterialCategory, string> = {
-  wood: 'Wood',
-  hardware: 'Hardware',
-  finish: 'Finish',
-  packaging: 'Packaging',
-};
 
 export function computeCategoryBreakdown(cost: ProductCost): CategoryBreakdown[] {
   return [
-    ...CATEGORIES.map((key) => ({ key, label: CATEGORY_LABELS[key], value: cost.categorySums[key] })),
-    { key: 'labor' as const, label: 'Labor', value: cost.laborCost },
+    ...cost.categoryTotals.map((c) => ({ key: c.category, label: c.category, value: c.total })),
+    { key: 'labor', label: 'Labor', value: cost.laborCost },
   ];
 }
 

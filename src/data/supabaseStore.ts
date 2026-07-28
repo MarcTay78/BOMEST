@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabaseClient';
-import type { BomLine, Material, PriceHistoryPoint, Product, Session } from '../lib/types';
+import type { BomLine, ListKind, ListOption, Material, PriceHistoryPoint, Product, Session } from '../lib/types';
 import { DeleteBlockedError, type DataStore } from './DataStore';
 
 // Maps snake_case DB rows (see supabase/migrations/0001_init.sql) to the
@@ -14,10 +14,23 @@ const toMaterial = (row: any): Material => ({
   id: row.id,
   name: row.name,
   category: row.category,
+  item: row.item,
+  type: row.type,
+  size: row.size,
   unit: row.unit,
   currentPrice: Number(row.current_price),
   updatedAt: row.updated_at,
 });
+
+const toOption = (row: any): ListOption => ({ id: row.id, name: row.name });
+
+// Every list kind's name is also the real table+column it governs.
+const OPTION_TARGET: Record<ListKind, { table: 'products' | 'materials'; column: string; noun: string }> = {
+  product_categories: { table: 'products', column: 'category', noun: 'product' },
+  material_categories: { table: 'materials', column: 'category', noun: 'material' },
+  material_items: { table: 'materials', column: 'item', noun: 'material' },
+  material_types: { table: 'materials', column: 'type', noun: 'material' },
+};
 
 const toProduct = (row: any): Product => ({
   id: row.id,
@@ -78,7 +91,15 @@ export const supabaseStore: DataStore = {
   async createMaterial(input) {
     const { data, error } = await requireClient()
       .from('materials')
-      .insert({ name: input.name, category: input.category, unit: input.unit, current_price: input.currentPrice })
+      .insert({
+        name: input.name,
+        category: input.category,
+        item: input.item,
+        type: input.type,
+        size: input.size,
+        unit: input.unit,
+        current_price: input.currentPrice,
+      })
       .select()
       .single();
     if (error) throw error;
@@ -155,6 +176,7 @@ export const supabaseStore: DataStore = {
     const dbPatch: Record<string, unknown> = {};
     if (patch.name !== undefined) dbPatch.name = patch.name;
     if (patch.obsolete !== undefined) dbPatch.obsolete = patch.obsolete;
+    if (patch.category !== undefined) dbPatch.category = patch.category;
     const { data, error } = await requireClient().from('products').update(dbPatch).eq('id', id).select().single();
     if (error) throw error;
     return toProduct(data);
@@ -190,6 +212,44 @@ export const supabaseStore: DataStore = {
   },
   async removeBomLine(id) {
     const { error } = await requireClient().from('bom_lines').delete().eq('id', id);
+    if (error) throw error;
+  },
+
+  async listOptions(kind) {
+    const { data, error } = await requireClient().from(kind).select('*').order('name', { ascending: true });
+    if (error) throw error;
+    return data.map(toOption);
+  },
+  async addOption(kind, name) {
+    const trimmed = name.trim();
+    const { data, error } = await requireClient().from(kind).upsert({ name: trimmed }, { onConflict: 'name' }).select().single();
+    if (error) throw error;
+    return toOption(data);
+  },
+  async renameOption(kind, id, name) {
+    const client = requireClient();
+    const trimmed = name.trim();
+    const { data: current, error: readError } = await client.from(kind).select('name').eq('id', id).single();
+    if (readError) throw readError;
+    const oldName = current.name as string;
+    const { data, error } = await client.from(kind).update({ name: trimmed }).eq('id', id).select().single();
+    if (error) throw error;
+    if (oldName !== trimmed) {
+      const { table, column } = OPTION_TARGET[kind];
+      const { error: cascadeError } = await client.from(table).update({ [column]: trimmed }).eq(column, oldName);
+      if (cascadeError) throw cascadeError;
+    }
+    return toOption(data);
+  },
+  async deleteOption(kind, id) {
+    const client = requireClient();
+    const { data: option, error: readError } = await client.from(kind).select('name').eq('id', id).single();
+    if (readError) throw readError;
+    const { table, column, noun } = OPTION_TARGET[kind];
+    const { count, error: countError } = await client.from(table).select('id', { count: 'exact', head: true }).eq(column, option.name);
+    if (countError) throw countError;
+    if (count && count > 0) throw new DeleteBlockedError(count, noun);
+    const { error } = await client.from(kind).delete().eq('id', id);
     if (error) throw error;
   },
 };

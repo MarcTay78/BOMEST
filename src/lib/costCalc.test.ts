@@ -3,10 +3,10 @@ import { computeCategoryBreakdown, computeProductCost, formatCurrency } from './
 import type { BomLine, Material } from './types';
 
 const materials: Material[] = [
-  { id: 'm1', name: 'Oak Lumber', category: 'wood', unit: 'm3', currentPrice: 850, updatedAt: '' },
-  { id: 'm2', name: 'Steel Bracket', category: 'hardware', unit: 'pcs', currentPrice: 2.1, updatedAt: '' },
-  { id: 'm3', name: 'Danish Oil Finish', category: 'finish', unit: 'L', currentPrice: 18.5, updatedAt: '' },
-  { id: 'm4', name: 'Box', category: 'packaging', unit: 'pcs', currentPrice: 4.2, updatedAt: '' },
+  { id: 'm1', name: 'Oak Lumber', category: 'Wood', item: 'Lumber', type: 'S4S', size: '', unit: 'm3', currentPrice: 850, updatedAt: '' },
+  { id: 'm2', name: 'Steel Bracket', category: 'Hardware', item: 'Bracket', type: '', size: '', unit: 'pcs', currentPrice: 2.1, updatedAt: '' },
+  { id: 'm3', name: 'Danish Oil Finish', category: 'Finish', item: 'Oil', type: '', size: '', unit: 'L', currentPrice: 18.5, updatedAt: '' },
+  { id: 'm4', name: 'Box', category: 'Packaging', item: 'Box', type: '', size: '', unit: 'pcs', currentPrice: 4.2, updatedAt: '' },
 ];
 const materialsById = new Map(materials.map((m) => [m.id, m]));
 
@@ -19,10 +19,11 @@ describe('computeProductCost', () => {
       { id: 'b4', productId: 'p1', materialId: 'm4', quantity: 1 },
     ];
     const cost = computeProductCost({ laborCost: 120 }, bomLines, materialsById);
-    expect(cost.categorySums.wood).toBeCloseTo(153);
-    expect(cost.categorySums.hardware).toBeCloseTo(8.4);
-    expect(cost.categorySums.finish).toBeCloseTo(7.4);
-    expect(cost.categorySums.packaging).toBeCloseTo(4.2);
+    const byCategory = Object.fromEntries(cost.categoryTotals.map((c) => [c.category, c.total]));
+    expect(byCategory.Wood).toBeCloseTo(153);
+    expect(byCategory.Hardware).toBeCloseTo(8.4);
+    expect(byCategory.Finish).toBeCloseTo(7.4);
+    expect(byCategory.Packaging).toBeCloseTo(4.2);
     expect(cost.materialsCost).toBeCloseTo(173);
     expect(cost.total).toBeCloseTo(293);
   });
@@ -30,6 +31,7 @@ describe('computeProductCost', () => {
   it('empty BOM: total is labor only', () => {
     const cost = computeProductCost({ laborCost: 50 }, [], materialsById);
     expect(cost.materialsCost).toBe(0);
+    expect(cost.categoryTotals).toEqual([]);
     expect(cost.total).toBe(50);
   });
 
@@ -47,18 +49,36 @@ describe('computeProductCost', () => {
     expect(before.total).toBe(850);
     expect(after.total).toBe(900);
   });
+
+  it('groups two materials that share a category into one bucket', () => {
+    const sameCategoryMaterials = new Map(materialsById);
+    sameCategoryMaterials.set('m5', { ...materials[0], id: 'm5', name: 'Walnut Lumber', currentPrice: 1450 });
+    const bomLines: BomLine[] = [
+      { id: 'b1', productId: 'p1', materialId: 'm1', quantity: 1 },
+      { id: 'b2', productId: 'p1', materialId: 'm5', quantity: 1 },
+    ];
+    const cost = computeProductCost({ laborCost: 0 }, bomLines, sameCategoryMaterials);
+    expect(cost.categoryTotals).toEqual([{ category: 'Wood', total: 850 + 1450 }]);
+  });
+
+  it('falls back to Uncategorized when a material has no category', () => {
+    const uncategorized = new Map(materialsById);
+    uncategorized.set('m1', { ...materials[0], category: '' });
+    const cost = computeProductCost({ laborCost: 0 }, [{ id: 'b1', productId: 'p1', materialId: 'm1', quantity: 1 }], uncategorized);
+    expect(cost.categoryTotals).toEqual([{ category: 'Uncategorized', total: 850 }]);
+  });
 });
 
 describe('computeCategoryBreakdown', () => {
-  it('returns the 4 material categories plus labor, in order', () => {
-    const cost = computeProductCost(
-      { laborCost: 120 },
-      [{ id: 'b1', productId: 'p1', materialId: 'm1', quantity: 1 }],
-      materialsById,
-    );
+  it('returns categories in first-seen BOM order plus labor last', () => {
+    const bomLines: BomLine[] = [
+      { id: 'b1', productId: 'p1', materialId: 'm3', quantity: 1 },
+      { id: 'b2', productId: 'p1', materialId: 'm1', quantity: 1 },
+    ];
+    const cost = computeProductCost({ laborCost: 120 }, bomLines, materialsById);
     const breakdown = computeCategoryBreakdown(cost);
-    expect(breakdown.map((b) => b.key)).toEqual(['wood', 'hardware', 'finish', 'packaging', 'labor']);
-    expect(breakdown.find((b) => b.key === 'wood')?.value).toBe(850);
+    expect(breakdown.map((b) => b.key)).toEqual(['Finish', 'Wood', 'labor']);
+    expect(breakdown.find((b) => b.key === 'Wood')?.value).toBe(850);
     expect(breakdown.find((b) => b.key === 'labor')?.value).toBe(120);
   });
 });

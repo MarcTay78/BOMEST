@@ -9,6 +9,7 @@ export function AppNav() {
       <NavLink to="/products">Products</NavLink>
       <NavLink to="/materials">Materials</NavLink>
       <NavLink to="/dashboard">Dashboard</NavLink>
+      <NavLink to="/lists">Lists</NavLink>
       <button type="button" className="linklike" onClick={() => signOut()}>Log out</button>
     </nav>
   );

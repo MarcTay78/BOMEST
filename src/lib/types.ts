@@ -1,12 +1,16 @@
 export type Role = 'admin' | 'viewer';
 
-export type MaterialCategory = 'wood' | 'hardware' | 'finish' | 'packaging';
-export type ProductCategory = 'table' | 'chair';
+/** Free-form now — the actual allowed values live in the maintained lists (see ListKind). */
+export type MaterialCategory = string;
+export type ProductCategory = string;
 
 export interface Material {
   id: string;
   name: string;
   category: MaterialCategory;
+  item: string;
+  type: string;
+  size: string;
   unit: string;
   currentPrice: number;
   updatedAt: string;
@@ -39,4 +43,12 @@ export interface Product {
 export interface Session {
   email: string;
   role: Role;
+}
+
+/** The four self-maintained pick-lists (product category, material category/item/type). */
+export type ListKind = 'product_categories' | 'material_categories' | 'material_items' | 'material_types';
+
+export interface ListOption {
+  id: string;
+  name: string;
 }
