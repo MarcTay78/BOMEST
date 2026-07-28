@@ -3,7 +3,7 @@ import { useIsAdmin } from '../auth/AuthContext';
 import { EditIcon, PlusIcon, TrashIcon, WarningIcon } from '../components/icons';
 import { OptionSelect } from '../components/OptionSelect';
 import { DeleteBlockedError, dataStore } from '../data';
-import { formatCurrency } from '../lib/costCalc';
+import { formatCurrency, formatDate } from '../lib/costCalc';
 import type { Material } from '../lib/types';
 
 interface Draft {
@@ -26,7 +26,7 @@ const draftFrom = (m: Material): Draft => ({
   price: String(m.currentPrice),
 });
 
-type SortKey = 'type' | 'size' | 'unit';
+type SortKey = 'item' | 'type' | 'size';
 
 export function Materials() {
   const isAdmin = useIsAdmin();
@@ -111,10 +111,11 @@ export function Materials() {
         <table className="table">
           <thead>
             <tr>
-              <th>Name</th><th>Category</th><th>Items</th>
+              <th>Name</th><th>Category</th>
+              <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort('item')}>Items{sortIndicator('item')}</th>
               <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort('type')}>Type{sortIndicator('type')}</th>
               <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort('size')}>Size{sortIndicator('size')}</th>
-              <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort('unit')}>Unit{sortIndicator('unit')}</th>
+              <th>Unit</th>
               <th style={{ textAlign: 'right' }}>Current price</th><th>Updated</th>
               {isAdmin && <th></th>}
             </tr>
@@ -140,7 +141,7 @@ export function Materials() {
                           onChange={(e) => setDraft({ ...draft, price: e.target.value })}
                         />
                       </td>
-                      <td className="text-muted">{m.updatedAt}</td>
+                      <td className="text-muted">{formatDate(m.updatedAt)}</td>
                       <td style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
                         <button type="button" className="btn btn-secondary" onClick={() => commitEdit(m)}>Save</button>
                       </td>
@@ -154,7 +155,7 @@ export function Materials() {
                       <td className="text-muted">{m.size || '—'}</td>
                       <td className="text-muted">{m.unit}</td>
                       <td style={{ textAlign: 'right' }}>{formatCurrency(m.currentPrice)} / {m.unit}</td>
-                      <td className="text-muted">{m.updatedAt}</td>
+                      <td className="text-muted">{formatDate(m.updatedAt)}</td>
                       {isAdmin && (
                         <td style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
                           <button type="button" className="btn btn-ghost btn-icon" aria-label="Edit" onClick={() => startEdit(m)}><EditIcon /></button>

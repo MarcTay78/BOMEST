@@ -49,3 +49,11 @@ export function computeCategoryBreakdown(cost: ProductCost): CategoryBreakdown[]
 export function formatCurrency(value: number): string {
   return '$' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+
+/** DD/MMM/YYYY, e.g. 12/Jul/2026. Uses UTC fields so a date-only string doesn't shift a day in negative-offset timezones. */
+export function formatDate(value: string): string {
+  const d = new Date(value);
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  const month = d.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' });
+  return `${day}/${month}/${d.getUTCFullYear()}`;
+}
