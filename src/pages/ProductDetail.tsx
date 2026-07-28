@@ -164,23 +164,25 @@ export function ProductDetail() {
                 No materials added yet — total reflects labor only.
               </div>
             )}
-            <BomTable
-              bomLines={bomLines}
-              materials={materials}
-              editable={isAdmin}
-              onAdd={(materialId, quantity) =>
-                runMutation(async () => {
-                  await dataStore.addBomLine(product.id, materialId, quantity);
-                  reload();
-                })
-              }
-              onRemove={(lineId) =>
-                runMutation(async () => {
-                  await dataStore.removeBomLine(lineId);
-                  reload();
-                })
-              }
-            />
+            <div style={{ overflowX: 'auto' }}>
+              <BomTable
+                bomLines={bomLines}
+                materials={materials}
+                editable={isAdmin}
+                onAdd={(materialId, quantity) =>
+                  runMutation(async () => {
+                    await dataStore.addBomLine(product.id, materialId, quantity);
+                    reload();
+                  })
+                }
+                onRemove={(lineId) =>
+                  runMutation(async () => {
+                    await dataStore.removeBomLine(lineId);
+                    reload();
+                  })
+                }
+              />
+            </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, alignItems: 'start' }}>
             <div className="field" style={{ maxWidth: 220 }}>
