@@ -38,23 +38,23 @@ let products: Product[] = [
 ];
 
 let bomLines: BomLine[] = [
-  { id: 'b1', productId: 'p1', materialId: 'm1', quantity: 0.18 },
-  { id: 'b2', productId: 'p1', materialId: 'm6', quantity: 0.4 },
-  { id: 'b3', productId: 'p1', materialId: 'm8', quantity: 1 },
-  { id: 'b4', productId: 'p2', materialId: 'm2', quantity: 0.03 },
-  { id: 'b5', productId: 'p2', materialId: 'm4', quantity: 4 },
-  { id: 'b6', productId: 'p2', materialId: 'm5', quantity: 12 },
-  { id: 'b7', productId: 'p2', materialId: 'm7', quantity: 4 },
-  { id: 'b8', productId: 'p3', materialId: 'm1', quantity: 0.24 },
-  { id: 'b9', productId: 'p3', materialId: 'm4', quantity: 2 },
-  { id: 'b10', productId: 'p3', materialId: 'm6', quantity: 0.5 },
-  { id: 'b11', productId: 'p3', materialId: 'm8', quantity: 1 },
-  { id: 'b12', productId: 'p4', materialId: 'm3', quantity: 0.025 },
-  { id: 'b13', productId: 'p4', materialId: 'm5', quantity: 10 },
-  { id: 'b14', productId: 'p4', materialId: 'm7', quantity: 4 },
-  { id: 'b15', productId: 'p5', materialId: 'm1', quantity: 0.15 },
-  { id: 'b16', productId: 'p5', materialId: 'm6', quantity: 0.3 },
-  { id: 'b17', productId: 'p5', materialId: 'm8', quantity: 1 },
+  { id: 'b1', productId: 'p1', materialId: 'm1', quantity: 0.18, remarks: '' },
+  { id: 'b2', productId: 'p1', materialId: 'm6', quantity: 0.4, remarks: '' },
+  { id: 'b3', productId: 'p1', materialId: 'm8', quantity: 1, remarks: '' },
+  { id: 'b4', productId: 'p2', materialId: 'm2', quantity: 0.03, remarks: '' },
+  { id: 'b5', productId: 'p2', materialId: 'm4', quantity: 4, remarks: '' },
+  { id: 'b6', productId: 'p2', materialId: 'm5', quantity: 12, remarks: '' },
+  { id: 'b7', productId: 'p2', materialId: 'm7', quantity: 4, remarks: '' },
+  { id: 'b8', productId: 'p3', materialId: 'm1', quantity: 0.24, remarks: '' },
+  { id: 'b9', productId: 'p3', materialId: 'm4', quantity: 2, remarks: '' },
+  { id: 'b10', productId: 'p3', materialId: 'm6', quantity: 0.5, remarks: '' },
+  { id: 'b11', productId: 'p3', materialId: 'm8', quantity: 1, remarks: '' },
+  { id: 'b12', productId: 'p4', materialId: 'm3', quantity: 0.025, remarks: '' },
+  { id: 'b13', productId: 'p4', materialId: 'm5', quantity: 10, remarks: '' },
+  { id: 'b14', productId: 'p4', materialId: 'm7', quantity: 4, remarks: '' },
+  { id: 'b15', productId: 'p5', materialId: 'm1', quantity: 0.15, remarks: '' },
+  { id: 'b16', productId: 'p5', materialId: 'm6', quantity: 0.3, remarks: '' },
+  { id: 'b17', productId: 'p5', materialId: 'm8', quantity: 1, remarks: '' },
 ];
 
 let lists: Record<ListKind, ListOption[]> = {
@@ -198,10 +198,17 @@ export const mockStore: DataStore = {
   async listBomLines(productId) {
     return bomLines.filter((l) => l.productId === productId);
   },
-  async addBomLine(productId, materialId, quantity) {
-    const line: BomLine = { id: newId('b'), productId, materialId, quantity };
+  async addBomLine(productId, materialId, quantity, remarks = '') {
+    const line: BomLine = { id: newId('b'), productId, materialId, quantity, remarks };
     bomLines = [...bomLines, line];
     return line;
+  },
+  async updateBomLineRemarks(id, remarks) {
+    const line = bomLines.find((l) => l.id === id);
+    if (!line) throw new Error('BOM line not found.');
+    const updated = { ...line, remarks };
+    bomLines = bomLines.map((l) => (l.id === id ? updated : l));
+    return updated;
   },
   async removeBomLine(id) {
     bomLines = bomLines.filter((l) => l.id !== id);

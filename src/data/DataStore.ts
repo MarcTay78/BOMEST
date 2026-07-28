@@ -24,7 +24,8 @@ export interface DataStore {
   uploadPhoto(productId: string, file: File): Promise<string>;
 
   listBomLines(productId: string): Promise<BomLine[]>;
-  addBomLine(productId: string, materialId: string, quantity: number): Promise<BomLine>;
+  addBomLine(productId: string, materialId: string, quantity: number, remarks?: string): Promise<BomLine>;
+  updateBomLineRemarks(id: string, remarks: string): Promise<BomLine>;
   removeBomLine(id: string): Promise<void>;
 
   /** The 4 self-maintained pick-lists (product category, material category/item/type). */

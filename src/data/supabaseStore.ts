@@ -47,6 +47,7 @@ const toBomLine = (row: any): BomLine => ({
   productId: row.product_id,
   materialId: row.material_id,
   quantity: Number(row.quantity),
+  remarks: row.remarks ?? '',
 });
 
 const toHistoryPoint = (row: any): PriceHistoryPoint => ({
@@ -201,12 +202,17 @@ export const supabaseStore: DataStore = {
     if (error) throw error;
     return data.map(toBomLine);
   },
-  async addBomLine(productId, materialId, quantity) {
+  async addBomLine(productId, materialId, quantity, remarks = '') {
     const { data, error } = await requireClient()
       .from('bom_lines')
-      .insert({ product_id: productId, material_id: materialId, quantity })
+      .insert({ product_id: productId, material_id: materialId, quantity, remarks })
       .select()
       .single();
+    if (error) throw error;
+    return toBomLine(data);
+  },
+  async updateBomLineRemarks(id, remarks) {
+    const { data, error } = await requireClient().from('bom_lines').update({ remarks }).eq('id', id).select().single();
     if (error) throw error;
     return toBomLine(data);
   },

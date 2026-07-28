@@ -42,7 +42,7 @@ export function computeProductCost(
 export function computeCategoryBreakdown(cost: ProductCost): CategoryBreakdown[] {
   return [
     ...cost.categoryTotals.map((c) => ({ key: c.category, label: c.category, value: c.total })),
-    { key: 'labor', label: 'Labor', value: cost.laborCost },
+    { key: 'labor', label: 'Overhead', value: cost.laborCost },
   ];
 }
 

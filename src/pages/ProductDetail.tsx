@@ -161,7 +161,7 @@ export function ProductDetail() {
             {bomLines.length === 0 && (
               <div className="callout" style={{ marginBottom: 12 }}>
                 <WarningIcon />
-                No materials added yet — total reflects labor only.
+                No materials added yet — total reflects overhead only.
               </div>
             )}
             <div style={{ overflowX: 'auto' }}>
@@ -169,9 +169,9 @@ export function ProductDetail() {
                 bomLines={bomLines}
                 materials={materials}
                 editable={isAdmin}
-                onAdd={(materialId, quantity) =>
+                onAdd={(materialId, quantity, remarks) =>
                   runMutation(async () => {
-                    await dataStore.addBomLine(product.id, materialId, quantity);
+                    await dataStore.addBomLine(product.id, materialId, quantity, remarks);
                     reload();
                   })
                 }
@@ -181,12 +181,18 @@ export function ProductDetail() {
                     reload();
                   })
                 }
+                onUpdateRemarks={(lineId, remarks) =>
+                  runMutation(async () => {
+                    await dataStore.updateBomLineRemarks(lineId, remarks);
+                    reload();
+                  })
+                }
               />
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, alignItems: 'start' }}>
             <div className="field" style={{ maxWidth: 220 }}>
-              <label htmlFor="labor">Labor cost</label>
+              <label htmlFor="labor">Overhead cost</label>
               {isAdmin ? (
                 <input id="labor" className="input" value={laborInput} onChange={(e) => setLaborInput(e.target.value)} onBlur={commitLabor} />
               ) : (

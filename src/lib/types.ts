@@ -28,6 +28,7 @@ export interface BomLine {
   productId: string;
   materialId: string;
   quantity: number;
+  remarks: string;
 }
 
 export interface Product {

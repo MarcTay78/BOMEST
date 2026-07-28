@@ -13,10 +13,10 @@ const materialsById = new Map(materials.map((m) => [m.id, m]));
 describe('computeProductCost', () => {
   it('sums qty * current price per category plus labor', () => {
     const bomLines: BomLine[] = [
-      { id: 'b1', productId: 'p1', materialId: 'm1', quantity: 0.18 },
-      { id: 'b2', productId: 'p1', materialId: 'm2', quantity: 4 },
-      { id: 'b3', productId: 'p1', materialId: 'm3', quantity: 0.4 },
-      { id: 'b4', productId: 'p1', materialId: 'm4', quantity: 1 },
+      { id: 'b1', productId: 'p1', materialId: 'm1', quantity: 0.18, remarks: '' },
+      { id: 'b2', productId: 'p1', materialId: 'm2', quantity: 4, remarks: '' },
+      { id: 'b3', productId: 'p1', materialId: 'm3', quantity: 0.4, remarks: '' },
+      { id: 'b4', productId: 'p1', materialId: 'm4', quantity: 1, remarks: '' },
     ];
     const cost = computeProductCost({ laborCost: 120 }, bomLines, materialsById);
     const byCategory = Object.fromEntries(cost.categoryTotals.map((c) => [c.category, c.total]));
@@ -36,16 +36,16 @@ describe('computeProductCost', () => {
   });
 
   it('ignores a BOM line whose material no longer exists', () => {
-    const bomLines: BomLine[] = [{ id: 'b1', productId: 'p1', materialId: 'missing', quantity: 5 }];
+    const bomLines: BomLine[] = [{ id: 'b1', productId: 'p1', materialId: 'missing', quantity: 5, remarks: '' }];
     const cost = computeProductCost({ laborCost: 10 }, bomLines, materialsById);
     expect(cost.total).toBe(10);
   });
 
   it('live re-pricing: changing a material price changes total without touching bom_lines', () => {
-    const before = computeProductCost({ laborCost: 0 }, [{ id: 'b1', productId: 'p1', materialId: 'm1', quantity: 1 }], materialsById);
+    const before = computeProductCost({ laborCost: 0 }, [{ id: 'b1', productId: 'p1', materialId: 'm1', quantity: 1, remarks: '' }], materialsById);
     const repriced = new Map(materialsById);
     repriced.set('m1', { ...materials[0], currentPrice: 900 });
-    const after = computeProductCost({ laborCost: 0 }, [{ id: 'b1', productId: 'p1', materialId: 'm1', quantity: 1 }], repriced);
+    const after = computeProductCost({ laborCost: 0 }, [{ id: 'b1', productId: 'p1', materialId: 'm1', quantity: 1, remarks: '' }], repriced);
     expect(before.total).toBe(850);
     expect(after.total).toBe(900);
   });
@@ -54,8 +54,8 @@ describe('computeProductCost', () => {
     const sameCategoryMaterials = new Map(materialsById);
     sameCategoryMaterials.set('m5', { ...materials[0], id: 'm5', name: 'Walnut Lumber', currentPrice: 1450 });
     const bomLines: BomLine[] = [
-      { id: 'b1', productId: 'p1', materialId: 'm1', quantity: 1 },
-      { id: 'b2', productId: 'p1', materialId: 'm5', quantity: 1 },
+      { id: 'b1', productId: 'p1', materialId: 'm1', quantity: 1, remarks: '' },
+      { id: 'b2', productId: 'p1', materialId: 'm5', quantity: 1, remarks: '' },
     ];
     const cost = computeProductCost({ laborCost: 0 }, bomLines, sameCategoryMaterials);
     expect(cost.categoryTotals).toEqual([{ category: 'Wood', total: 850 + 1450 }]);
@@ -64,7 +64,7 @@ describe('computeProductCost', () => {
   it('falls back to Uncategorized when a material has no category', () => {
     const uncategorized = new Map(materialsById);
     uncategorized.set('m1', { ...materials[0], category: '' });
-    const cost = computeProductCost({ laborCost: 0 }, [{ id: 'b1', productId: 'p1', materialId: 'm1', quantity: 1 }], uncategorized);
+    const cost = computeProductCost({ laborCost: 0 }, [{ id: 'b1', productId: 'p1', materialId: 'm1', quantity: 1, remarks: '' }], uncategorized);
     expect(cost.categoryTotals).toEqual([{ category: 'Uncategorized', total: 850 }]);
   });
 });
@@ -72,8 +72,8 @@ describe('computeProductCost', () => {
 describe('computeCategoryBreakdown', () => {
   it('returns categories in first-seen BOM order plus labor last', () => {
     const bomLines: BomLine[] = [
-      { id: 'b1', productId: 'p1', materialId: 'm3', quantity: 1 },
-      { id: 'b2', productId: 'p1', materialId: 'm1', quantity: 1 },
+      { id: 'b1', productId: 'p1', materialId: 'm3', quantity: 1, remarks: '' },
+      { id: 'b2', productId: 'p1', materialId: 'm1', quantity: 1, remarks: '' },
     ];
     const cost = computeProductCost({ laborCost: 120 }, bomLines, materialsById);
     const breakdown = computeCategoryBreakdown(cost);
