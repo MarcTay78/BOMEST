@@ -26,7 +26,7 @@ const draftFrom = (m: Material): Draft => ({
   price: String(m.currentPrice),
 });
 
-type SortKey = 'item' | 'type' | 'size';
+type SortKey = 'category' | 'item' | 'type' | 'size';
 
 export function Materials() {
   const isAdmin = useIsAdmin();
@@ -111,7 +111,8 @@ export function Materials() {
         <table className="table">
           <thead>
             <tr>
-              <th>Name</th><th>Category</th>
+              <th>Name</th>
+              <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort('category')}>Category{sortIndicator('category')}</th>
               <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort('item')}>Items{sortIndicator('item')}</th>
               <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort('type')}>Type{sortIndicator('type')}</th>
               <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort('size')}>Size{sortIndicator('size')}</th>

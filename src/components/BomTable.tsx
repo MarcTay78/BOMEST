@@ -102,7 +102,7 @@ export function BomTable({ bomLines, materials, editable, onAdd, onRemove, onUpd
             <td colSpan={4}>
               <select className="input" style={{ minHeight: 32 }} value={materialId} onChange={(e) => setMaterialId(e.target.value)}>
                 <option value="">Choose material…</option>
-                {materials.map((m) => (
+                {[...materials].sort((a, b) => a.name.localeCompare(b.name)).map((m) => (
                   <option key={m.id} value={m.id}>{m.name}</option>
                 ))}
               </select>

@@ -215,7 +215,7 @@ export const mockStore: DataStore = {
   },
 
   async listOptions(kind) {
-    return [...lists[kind]];
+    return [...lists[kind]].sort((a, b) => a.name.localeCompare(b.name));
   },
   async addOption(kind, name) {
     const trimmed = name.trim();
