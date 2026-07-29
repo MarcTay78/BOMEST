@@ -14,7 +14,34 @@ export interface ProductCost {
   categoryTotals: { category: string; total: number }[];
 }
 
-/** product.total_cost = SUM(bom_lines.quantity * materials.current_price) + product.labor_cost */
+const MM3_PER_M3 = 1_000_000_000;
+
+/** "24x590x915" (mm) -> [24, 590, 915]. Null if not exactly 3 positive numbers. */
+export function parseSizeMm(size: string): [number, number, number] | null {
+  const parts = size.split(/x/i).map((s) => Number(s.trim()));
+  if (parts.length !== 3 || parts.some((n) => !Number.isFinite(n) || n <= 0)) return null;
+  return parts as [number, number, number];
+}
+
+export interface EffectiveUnit {
+  price: number;
+  unit: string;
+  /** True when this price was derived from an m3 rate + parsed Size, rather than taken as-is. */
+  converted: boolean;
+}
+
+/** A material priced per m3 with a parseable WxHxL Size auto-converts to a $/pc rate. */
+export function computeEffectiveUnit(material: Pick<Material, 'unit' | 'size' | 'currentPrice'>): EffectiveUnit {
+  const isVolumePriced = material.unit.trim().toLowerCase() === 'm3';
+  const dims = isVolumePriced ? parseSizeMm(material.size) : null;
+  if (!dims) return { price: material.currentPrice, unit: material.unit, converted: false };
+  const [a, b, c] = dims;
+  const volumeM3 = (a * b * c) / MM3_PER_M3;
+  return { price: volumeM3 * material.currentPrice, unit: 'pcs', converted: true };
+}
+
+/** product.total_cost = SUM(bom_lines.quantity * materials.current_price) + product.labor_cost
+ *  (materials priced per m3 with a parseable Size use the computed $/pc rate — see computeEffectiveUnit) */
 export function computeProductCost(
   product: Pick<Product, 'laborCost'>,
   bomLines: BomLine[],
@@ -31,7 +58,8 @@ export function computeProductCost(
       sums.set(category, 0);
       order.push(category);
     }
-    sums.set(category, sums.get(category)! + line.quantity * material.currentPrice);
+    const { price } = computeEffectiveUnit(material);
+    sums.set(category, sums.get(category)! + line.quantity * price);
   }
 
   const categoryTotals = order.map((category) => ({ category, total: sums.get(category)! }));

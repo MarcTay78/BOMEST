@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { formatCurrency } from '../lib/costCalc';
+import { computeEffectiveUnit, formatCurrency } from '../lib/costCalc';
 import type { BomLine, Material } from '../lib/types';
 import { TrashIcon } from './icons';
 
@@ -59,16 +59,19 @@ export function BomTable({ bomLines, materials, editable, onAdd, onRemove, onUpd
           return sorted.map(({ line, material }) => {
             const showCategory = material.category !== previousCategory;
             previousCategory = material.category;
+            const effective = computeEffectiveUnit(material);
             return (
               <tr key={line.id}>
                 <td>{showCategory ? material.category || '—' : ''}</td>
                 <td>{material.item || '—'}</td>
                 <td>{material.type || '—'}</td>
                 <td>{material.size || '—'}</td>
-                <td style={{ textAlign: 'right' }}>{formatCurrency(material.currentPrice)}</td>
+                <td style={{ textAlign: 'right' }} title={effective.converted ? `${formatCurrency(material.currentPrice)} / m3` : undefined}>
+                  {formatCurrency(effective.price)}
+                </td>
                 <td>{line.quantity}</td>
-                <td className="text-muted">{material.unit}</td>
-                <td style={{ textAlign: 'right' }}>{formatCurrency(line.quantity * material.currentPrice)}</td>
+                <td className="text-muted">{effective.unit}</td>
+                <td style={{ textAlign: 'right' }}>{formatCurrency(line.quantity * effective.price)}</td>
                 <td>
                   {editable ? (
                     <input
@@ -104,11 +107,13 @@ export function BomTable({ bomLines, materials, editable, onAdd, onRemove, onUpd
                 ))}
               </select>
             </td>
-            <td style={{ textAlign: 'right' }} className="text-muted">{selectedMaterial ? formatCurrency(selectedMaterial.currentPrice) : '—'}</td>
+            <td style={{ textAlign: 'right' }} className="text-muted">
+              {selectedMaterial ? formatCurrency(computeEffectiveUnit(selectedMaterial).price) : '—'}
+            </td>
             <td>
               <input className="input" style={{ minHeight: 32 }} placeholder="qty" value={qty} onChange={(e) => setQty(e.target.value)} />
             </td>
-            <td className="text-muted">{selectedMaterial?.unit ?? '—'}</td>
+            <td className="text-muted">{selectedMaterial ? computeEffectiveUnit(selectedMaterial).unit : '—'}</td>
             <td>
               <input className="input" style={{ minHeight: 32 }} placeholder="remarks" value={remarks} onChange={(e) => setRemarks(e.target.value)} />
             </td>

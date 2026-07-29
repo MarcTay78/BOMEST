@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeCategoryBreakdown, computeProductCost, formatCurrency } from './costCalc';
+import { computeCategoryBreakdown, computeEffectiveUnit, computeProductCost, formatCurrency, parseSizeMm } from './costCalc';
 import type { BomLine, Material } from './types';
 
 const materials: Material[] = [
@@ -80,6 +80,66 @@ describe('computeCategoryBreakdown', () => {
     expect(breakdown.map((b) => b.key)).toEqual(['Finish', 'Wood', 'labor']);
     expect(breakdown.find((b) => b.key === 'Wood')?.value).toBe(850);
     expect(breakdown.find((b) => b.key === 'labor')?.value).toBe(120);
+  });
+});
+
+describe('parseSizeMm', () => {
+  it('parses "AxBxC" into 3 numbers', () => {
+    expect(parseSizeMm('24x590x915')).toEqual([24, 590, 915]);
+  });
+
+  it('is case-insensitive and tolerates spaces', () => {
+    expect(parseSizeMm('24 X 590 X 915')).toEqual([24, 590, 915]);
+  });
+
+  it('rejects anything that is not exactly 3 positive numbers', () => {
+    expect(parseSizeMm('')).toBeNull();
+    expect(parseSizeMm('4x8')).toBeNull();
+    expect(parseSizeMm('24x590x915x10')).toBeNull();
+    expect(parseSizeMm('24x0x915')).toBeNull();
+    expect(parseSizeMm('large')).toBeNull();
+  });
+});
+
+describe('computeEffectiveUnit', () => {
+  it('converts an m3-priced material with a parseable size to a $/pc rate', () => {
+    const material = { unit: 'm3', size: '24x590x915', currentPrice: 850 };
+    const effective = computeEffectiveUnit(material);
+    const expectedVolumeM3 = (24 * 590 * 915) / 1_000_000_000;
+    expect(effective.converted).toBe(true);
+    expect(effective.unit).toBe('pcs');
+    expect(effective.price).toBeCloseTo(expectedVolumeM3 * 850);
+  });
+
+  it('leaves an m3 material with no parseable size untouched', () => {
+    const material = { unit: 'm3', size: '', currentPrice: 850 };
+    const effective = computeEffectiveUnit(material);
+    expect(effective).toEqual({ price: 850, unit: 'm3', converted: false });
+  });
+
+  it('leaves a non-m3 material untouched even with a parseable size', () => {
+    const material = { unit: 'pcs', size: '20x56x460', currentPrice: 1 };
+    const effective = computeEffectiveUnit(material);
+    expect(effective).toEqual({ price: 1, unit: 'pcs', converted: false });
+  });
+
+  it('unit match is case-insensitive', () => {
+    const material = { unit: 'M3', size: '100x100x1000', currentPrice: 1000 };
+    expect(computeEffectiveUnit(material).converted).toBe(true);
+  });
+});
+
+describe('computeProductCost with m3-to-pcs conversion', () => {
+  it('uses the computed $/pc rate, not the raw m3 rate, for the line total', () => {
+    const convertible = new Map([
+      ['m9', { id: 'm9', name: 'Chair Leg', category: 'Wood', item: 'Leg', type: 'S4S', size: '24x590x915', unit: 'm3', currentPrice: 850, updatedAt: '' }],
+    ]);
+    const bomLines: BomLine[] = [{ id: 'b1', productId: 'p1', materialId: 'm9', quantity: 4, remarks: '' }];
+    const cost = computeProductCost({ laborCost: 0 }, bomLines, convertible);
+    const piecePrice = ((24 * 590 * 915) / 1_000_000_000) * 850;
+    expect(cost.total).toBeCloseTo(piecePrice * 4);
+    // sanity: the naive (wrong) m3-rate total would be wildly higher
+    expect(cost.total).toBeLessThan(850 * 4);
   });
 });
 
