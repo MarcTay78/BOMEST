@@ -5,7 +5,6 @@ import { OptionSelect } from '../components/OptionSelect';
 import { DeleteBlockedError, dataStore } from '../data';
 import { computeEffectivePrice, formatCurrency, formatDate } from '../lib/costCalc';
 import type { Material, MaterialComponent } from '../lib/types';
-import { useCssVarHeight } from '../lib/useCssVarHeight';
 
 interface Draft {
   name: string;
@@ -41,8 +40,6 @@ export function Materials() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [activeCategory, setActiveCategory] = useState('All');
   const [recipeOpenId, setRecipeOpenId] = useState<string | null>(null);
-  const titleRef = useCssVarHeight<HTMLDivElement>('--materials-title-h');
-  const tabsRef = useCssVarHeight<HTMLDivElement>('--materials-tabs-h');
 
   const reload = () =>
     Promise.all([dataStore.listMaterials(), dataStore.listMaterialComponents()]).then(([mats, components]) => {
@@ -90,13 +87,6 @@ export function Materials() {
   }, [categoryFiltered, sortKey, sortDir]);
 
   const sortIndicator = (key: SortKey) => (sortKey === key ? (sortDir === 'asc' ? ' ↑' : ' ↓') : '');
-
-  const stickyTh: React.CSSProperties = {
-    position: 'sticky',
-    top: 'calc(var(--nav-h) + var(--materials-title-h) + var(--materials-tabs-h))',
-    zIndex: 4,
-    background: 'var(--color-bg)',
-  };
 
   const startEdit = (m: Material) => {
     setEditingId(m.id);
@@ -146,13 +136,7 @@ export function Materials() {
 
   return (
     <div className="content">
-      <div
-        ref={titleRef}
-        style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 18,
-          position: 'sticky', top: 'var(--nav-h)', zIndex: 6, background: 'var(--color-bg)', paddingTop: 18,
-        }}
-      >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 18 }}>
         <h1 style={{ margin: 0 }}>Materials</h1>
         {isAdmin && (
           <button type="button" className="btn btn-primary" onClick={() => setAdding(true)}>
@@ -163,13 +147,7 @@ export function Materials() {
 
       {adding && <AddMaterialForm materials={materials} onDone={async () => { setAdding(false); await reload(); }} onCancel={() => setAdding(false)} />}
 
-      <div
-        ref={tabsRef}
-        style={{
-          display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap',
-          position: 'sticky', top: 'calc(var(--nav-h) + var(--materials-title-h))', zIndex: 5, background: 'var(--color-bg)', paddingTop: 6,
-        }}
-      >
+      <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
         {['All', ...categories].map((cat) => (
           <button
             key={cat}
@@ -186,14 +164,14 @@ export function Materials() {
         <table className="table">
           <thead>
             <tr>
-              <th style={{ ...stickyTh, cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort('name')}>Name{sortIndicator('name')}</th>
-              <th style={{ ...stickyTh, cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort('category')}>Category{sortIndicator('category')}</th>
-              <th style={{ ...stickyTh, cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort('item')}>Items{sortIndicator('item')}</th>
-              <th style={{ ...stickyTh, cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort('type')}>Type{sortIndicator('type')}</th>
-              <th style={{ ...stickyTh, cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort('size')}>Size{sortIndicator('size')}</th>
-              <th style={stickyTh}>Unit</th>
-              <th style={{ ...stickyTh, textAlign: 'right' }}>Current price</th><th style={stickyTh}>Updated</th>
-              {isAdmin && <th style={stickyTh}></th>}
+              <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort('name')}>Name{sortIndicator('name')}</th>
+              <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort('category')}>Category{sortIndicator('category')}</th>
+              <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort('item')}>Items{sortIndicator('item')}</th>
+              <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort('type')}>Type{sortIndicator('type')}</th>
+              <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort('size')}>Size{sortIndicator('size')}</th>
+              <th>Unit</th>
+              <th style={{ textAlign: 'right' }}>Current price</th><th>Updated</th>
+              {isAdmin && <th></th>}
             </tr>
           </thead>
           <tbody>
