@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { Fragment, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useIsAdmin } from '../auth/AuthContext';
 import { EditIcon, PlusIcon, TrashIcon, WarningIcon } from '../components/icons';
 import { OptionSelect } from '../components/OptionSelect';
@@ -200,7 +200,8 @@ export function Materials() {
             {sortedMaterials.map((m) => {
               const editing = editingId === m.id && draft;
               return (
-                <tr key={m.id}>
+                <Fragment key={m.id}>
+                <tr>
                   {editing ? (
                     <>
                       <td><input className="input" style={{ minHeight: 30, width: 140 }} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></td>
@@ -254,20 +255,21 @@ export function Materials() {
                       )}
                     </>
                   )}
-                  {recipeOpenId === m.id && m.isComposite && (
-                    <tr>
-                      <td colSpan={9}>
-                        <RecipeEditor
-                          material={m}
-                          materials={materials}
-                          components={componentsByMaterialId.get(m.id) ?? []}
-                          onAdd={(componentMaterialId, quantity) => addRecipeComponent(m.id, componentMaterialId, quantity)}
-                          onRemove={removeRecipeComponent}
-                        />
-                      </td>
-                    </tr>
-                  )}
                 </tr>
+                {recipeOpenId === m.id && m.isComposite && (
+                  <tr>
+                    <td colSpan={9}>
+                      <RecipeEditor
+                        material={m}
+                        materials={materials}
+                        components={componentsByMaterialId.get(m.id) ?? []}
+                        onAdd={(componentMaterialId, quantity) => addRecipeComponent(m.id, componentMaterialId, quantity)}
+                        onRemove={removeRecipeComponent}
+                      />
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               );
             })}
           </tbody>
