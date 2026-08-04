@@ -33,7 +33,7 @@ export function HardwareDetail() {
     const [p, lines, mats] = await Promise.all([dataStore.getProduct(id), dataStore.listBomLines(id), dataStore.listMaterials()]);
     setProduct(p);
     setBomLines(lines);
-    setMaterials(mats.filter((m) => m.category === HARDWARE_CATEGORY));
+    setMaterials(mats);
     if (p) setNameInput(p.name);
   };
 
@@ -43,6 +43,7 @@ export function HardwareDetail() {
   }, [id]);
 
   const materialsById = useMemo(() => new Map(materials.map((m) => [m.id, m])), [materials]);
+  const hardwareMaterials = useMemo(() => materials.filter((m) => m.category === HARDWARE_CATEGORY), [materials]);
   const cost = useMemo(() => (product ? computeProductCost(product, bomLines, materialsById) : null), [product, bomLines, materialsById]);
 
   if (product === undefined) return null;
@@ -118,6 +119,7 @@ export function HardwareDetail() {
             <BomTable
               bomLines={bomLines}
               materials={materials}
+              pickerMaterials={hardwareMaterials}
               editable={isAdmin}
               onAdd={(materialId, quantity, remarks) =>
                 runMutation(async () => {
