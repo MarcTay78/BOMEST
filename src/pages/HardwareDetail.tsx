@@ -6,7 +6,7 @@ import { CostBreakdown } from '../components/CostBreakdown';
 import { BackIcon, TrashIcon, WarningIcon } from '../components/icons';
 import { dataStore } from '../data';
 import { computeProductCost } from '../lib/costCalc';
-import type { BomLine, Material, Product } from '../lib/types';
+import { HARDWARE_CATEGORY, type BomLine, type Material, type Product } from '../lib/types';
 
 export function HardwareDetail() {
   const { id = '' } = useParams();
@@ -33,7 +33,7 @@ export function HardwareDetail() {
     const [p, lines, mats] = await Promise.all([dataStore.getProduct(id), dataStore.listBomLines(id), dataStore.listMaterials()]);
     setProduct(p);
     setBomLines(lines);
-    setMaterials(mats);
+    setMaterials(mats.filter((m) => m.category === HARDWARE_CATEGORY));
     if (p) setNameInput(p.name);
   };
 

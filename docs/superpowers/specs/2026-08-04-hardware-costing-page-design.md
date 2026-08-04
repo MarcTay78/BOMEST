@@ -14,7 +14,7 @@ Hardware sub-items are `Product` rows with `category: 'Hardware'`. No new entity
 
 **`src/pages/HardwareList.tsx`** (new) — grid of Hardware-category products only. Sort by cost/name (mirrors `ProductList`). No category tabs (single fixed category), no photos. Inline "type a name → create" row (pattern like `Materials.tsx`'s `AddMaterialForm`, but just a name field) calls `dataStore.createProduct({ name, category: HARDWARE_CATEGORY })` then navigates to `/hardware/:id`.
 
-**`src/pages/HardwareDetail.tsx`** (new) — stripped-down `ProductDetail`: click-to-rename name (admin only), delete button with confirm, `<BomTable>` for materials (add/remove line, edit remarks), `<CostBreakdown>` for the total. No photo upload, no obsolete toggle, no overhead-cost input — `laborCost` stays `0` (set by `createProduct`) and is never edited here.
+**`src/pages/HardwareDetail.tsx`** (new) — stripped-down `ProductDetail`: click-to-rename name (admin only), delete button with confirm, `<BomTable>` for materials (add/remove line, edit remarks), `<CostBreakdown>` for the total. No photo upload, no obsolete toggle, no overhead-cost input — `laborCost` stays `0` (set by `createProduct`) and is never edited here. The material picker dropdown is scoped to `material.category === HARDWARE_CATEGORY` only — the BOM here is built exclusively from Hardware-category materials.
 
 **`src/App.tsx`** — add routes `/hardware` → `HardwareList`, `/hardware/:id` → `HardwareDetail`.
 
