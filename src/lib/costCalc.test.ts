@@ -3,10 +3,10 @@ import { computeCategoryBreakdown, computeEffectiveUnit, computeProductCost, for
 import type { BomLine, Material } from './types';
 
 const materials: Material[] = [
-  { id: 'm1', name: 'Oak Lumber', category: 'Wood', item: 'Lumber', type: 'S4S', size: '', unit: 'm3', currentPrice: 850, updatedAt: '' },
-  { id: 'm2', name: 'Steel Bracket', category: 'Hardware', item: 'Bracket', type: '', size: '', unit: 'pcs', currentPrice: 2.1, updatedAt: '' },
-  { id: 'm3', name: 'Danish Oil Finish', category: 'Finish', item: 'Oil', type: '', size: '', unit: 'L', currentPrice: 18.5, updatedAt: '' },
-  { id: 'm4', name: 'Box', category: 'Packaging', item: 'Box', type: '', size: '', unit: 'pcs', currentPrice: 4.2, updatedAt: '' },
+  { id: 'm1', name: 'Oak Lumber', category: 'Wood', item: 'Lumber', type: 'S4S', size: '', unit: 'm3', currentPrice: 850, isComposite: false, updatedAt: '' },
+  { id: 'm2', name: 'Steel Bracket', category: 'Hardware', item: 'Bracket', type: '', size: '', unit: 'pcs', currentPrice: 2.1, isComposite: false, updatedAt: '' },
+  { id: 'm3', name: 'Danish Oil Finish', category: 'Finish', item: 'Oil', type: '', size: '', unit: 'L', currentPrice: 18.5, isComposite: false, updatedAt: '' },
+  { id: 'm4', name: 'Box', category: 'Packaging', item: 'Box', type: '', size: '', unit: 'pcs', currentPrice: 4.2, isComposite: false, updatedAt: '' },
 ];
 const materialsById = new Map(materials.map((m) => [m.id, m]));
 
@@ -132,7 +132,7 @@ describe('computeEffectiveUnit', () => {
 describe('computeProductCost with m3-to-pcs conversion', () => {
   it('uses the computed $/pc rate, not the raw m3 rate, for the line total', () => {
     const convertible = new Map([
-      ['m9', { id: 'm9', name: 'Chair Leg', category: 'Wood', item: 'Leg', type: 'S4S', size: '24x590x915', unit: 'm3', currentPrice: 850, updatedAt: '' }],
+      ['m9', { id: 'm9', name: 'Chair Leg', category: 'Wood', item: 'Leg', type: 'S4S', size: '24x590x915', unit: 'm3', currentPrice: 850, isComposite: false, updatedAt: '' }],
     ]);
     const bomLines: BomLine[] = [{ id: 'b1', productId: 'p1', materialId: 'm9', quantity: 4, remarks: '' }];
     const cost = computeProductCost({ laborCost: 0 }, bomLines, convertible);
