@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { computeCategoryBreakdown, computeEffectiveUnit, computeProductCost, formatCurrency, parseSizeMm } from './costCalc';
-import type { BomLine, Material } from './types';
+import { computeCategoryBreakdown, computeEffectivePrice, computeEffectiveUnit, computeProductCost, formatCurrency, parseSizeMm } from './costCalc';
+import type { BomLine, Material, MaterialComponent } from './types';
 
 const materials: Material[] = [
   { id: 'm1', name: 'Oak Lumber', category: 'Wood', item: 'Lumber', type: 'S4S', size: '', unit: 'm3', currentPrice: 850, isComposite: false, updatedAt: '' },
@@ -148,5 +148,38 @@ describe('formatCurrency', () => {
     expect(formatCurrency(850)).toBe('$850.00');
     expect(formatCurrency(1234.5)).toBe('$1,234.50');
     expect(formatCurrency(0)).toBe('$0.00');
+  });
+});
+
+describe('computeEffectivePrice', () => {
+  it('passes through to computeEffectiveUnit for a non-composite material', () => {
+    const price = computeEffectivePrice(materials[0], materialsById, new Map());
+    expect(price).toEqual(computeEffectiveUnit(materials[0]));
+  });
+
+  it('sums quantity * component effective price for a composite material', () => {
+    const pack: Material = { id: 'pack', name: 'Hardware Pack', category: 'Hardware', item: '', type: '', size: '', unit: 'pcs', currentPrice: 0, isComposite: true, updatedAt: '' };
+    const withPack = new Map(materialsById);
+    withPack.set('pack', pack);
+    const components: MaterialComponent[] = [
+      { id: 'c1', materialId: 'pack', componentMaterialId: 'm2', quantity: 4 },
+      { id: 'c2', materialId: 'pack', componentMaterialId: 'm4', quantity: 1 },
+    ];
+    const componentsByMaterialId = new Map([['pack', components]]);
+    const price = computeEffectivePrice(pack, withPack, componentsByMaterialId);
+    expect(price).toEqual({ price: 4 * 2.1 + 1 * 4.2, unit: 'pcs', converted: false });
+  });
+
+  it('skips a component whose material no longer exists, without throwing', () => {
+    const pack: Material = { id: 'pack', name: 'Hardware Pack', category: 'Hardware', item: '', type: '', size: '', unit: 'pcs', currentPrice: 0, isComposite: true, updatedAt: '' };
+    const withPack = new Map(materialsById);
+    withPack.set('pack', pack);
+    const components: MaterialComponent[] = [
+      { id: 'c1', materialId: 'pack', componentMaterialId: 'm2', quantity: 4 },
+      { id: 'c2', materialId: 'pack', componentMaterialId: 'missing', quantity: 99 },
+    ];
+    const componentsByMaterialId = new Map([['pack', components]]);
+    const price = computeEffectivePrice(pack, withPack, componentsByMaterialId);
+    expect(price).toEqual({ price: 4 * 2.1, unit: 'pcs', converted: false });
   });
 });

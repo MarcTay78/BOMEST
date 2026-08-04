@@ -1,4 +1,4 @@
-import type { BomLine, Material, Product } from './types';
+import type { BomLine, Material, MaterialComponent, Product } from './types';
 
 export interface CategoryBreakdown {
   key: string;
@@ -40,12 +40,34 @@ export function computeEffectiveUnit(material: Pick<Material, 'unit' | 'size' | 
   return { price: volumeM3 * material.currentPrice, unit: 'pcs', converted: true };
 }
 
+/** A composite material's price is the live sum of quantity * component effective price
+ *  over its recipe (material_components), recursing one level — recipes are flat, a
+ *  composite's components are never themselves composite. A non-composite material just
+ *  delegates to computeEffectiveUnit. A component id missing from materialsById is skipped
+ *  (defensive, same pattern as computeProductCost's missing-material handling). */
+export function computeEffectivePrice(
+  material: Material,
+  materialsById: Map<string, Material>,
+  componentsByMaterialId: Map<string, MaterialComponent[]>,
+): EffectiveUnit {
+  if (!material.isComposite) return computeEffectiveUnit(material);
+  const components = componentsByMaterialId.get(material.id) ?? [];
+  let total = 0;
+  for (const component of components) {
+    const componentMaterial = materialsById.get(component.componentMaterialId);
+    if (!componentMaterial) continue;
+    total += component.quantity * computeEffectivePrice(componentMaterial, materialsById, componentsByMaterialId).price;
+  }
+  return { price: total, unit: material.unit, converted: false };
+}
+
 /** product.total_cost = SUM(bom_lines.quantity * materials.current_price) + product.labor_cost
  *  (materials priced per m3 with a parseable Size use the computed $/pc rate — see computeEffectiveUnit) */
 export function computeProductCost(
   product: Pick<Product, 'laborCost'>,
   bomLines: BomLine[],
   materialsById: Map<string, Material>,
+  componentsByMaterialId: Map<string, MaterialComponent[]> = new Map(),
 ): ProductCost {
   const order: string[] = [];
   const sums = new Map<string, number>();
@@ -58,7 +80,7 @@ export function computeProductCost(
       sums.set(category, 0);
       order.push(category);
     }
-    const { price } = computeEffectiveUnit(material);
+    const { price } = computeEffectivePrice(material, materialsById, componentsByMaterialId);
     sums.set(category, sums.get(category)! + line.quantity * price);
   }
 
