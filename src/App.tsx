@@ -3,8 +3,6 @@ import { AuthProvider } from './auth/AuthContext';
 import { ProtectedRoute } from './auth/ProtectedRoute';
 import { AppNav } from './components/AppNav';
 import { Dashboard } from './pages/Dashboard';
-import { HardwareDetail } from './pages/HardwareDetail';
-import { HardwareList } from './pages/HardwareList';
 import { Lists } from './pages/Lists';
 import { Login } from './pages/Login';
 import { Materials } from './pages/Materials';
@@ -21,8 +19,6 @@ function AppShell() {
         <Route path="/products" element={<ProductList />} />
         <Route path="/products/new" element={<NewProduct />} />
         <Route path="/products/:id" element={<ProductDetail />} />
-        <Route path="/hardware" element={<HardwareList />} />
-        <Route path="/hardware/:id" element={<HardwareDetail />} />
         <Route path="/materials" element={<Materials />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/lists" element={<Lists />} />

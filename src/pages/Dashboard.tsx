@@ -3,7 +3,7 @@ import { buildCategoryColorMap, CostRankingChart, type RankingRow } from '../com
 import { PriceTrendChart, type TrendPoint } from '../components/charts/PriceTrendChart';
 import { dataStore } from '../data';
 import { computeProductCost, formatCurrency } from '../lib/costCalc';
-import { HARDWARE_CATEGORY, type BomLine, type Material, type Product } from '../lib/types';
+import type { BomLine, Material, Product } from '../lib/types';
 
 export function Dashboard() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -34,7 +34,6 @@ export function Dashboard() {
 
   const rankingRows: RankingRow[] = useMemo(() => {
     return products
-      .filter((p) => p.category !== HARDWARE_CATEGORY)
       .filter((p) => categoryFilter === 'all' || p.category === categoryFilter)
       .map((p) => ({
         id: p.id,

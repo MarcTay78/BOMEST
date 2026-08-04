@@ -6,7 +6,6 @@ import { TrashIcon } from './icons';
 interface Props {
   bomLines: BomLine[];
   materials: Material[];
-  pickerMaterials?: Material[];
   editable: boolean;
   onAdd: (materialId: string, quantity: number, remarks: string) => void;
   onRemove: (id: string) => void;
@@ -15,9 +14,8 @@ interface Props {
 
 const COLUMN_COUNT = 9;
 
-export function BomTable({ bomLines, materials, pickerMaterials, editable, onAdd, onRemove, onUpdateRemarks }: Props) {
+export function BomTable({ bomLines, materials, editable, onAdd, onRemove, onUpdateRemarks }: Props) {
   const materialsById = new Map(materials.map((m) => [m.id, m]));
-  const pickerOptions = pickerMaterials ?? materials;
   const [materialId, setMaterialId] = useState('');
   const [qty, setQty] = useState('');
   const [remarks, setRemarks] = useState('');
@@ -104,7 +102,7 @@ export function BomTable({ bomLines, materials, pickerMaterials, editable, onAdd
             <td colSpan={4}>
               <select className="input" style={{ minHeight: 32 }} value={materialId} onChange={(e) => setMaterialId(e.target.value)}>
                 <option value="">Choose material…</option>
-                {[...pickerOptions].sort((a, b) => a.name.localeCompare(b.name)).map((m) => (
+                {[...materials].sort((a, b) => a.name.localeCompare(b.name)).map((m) => (
                   <option key={m.id} value={m.id}>{m.name}</option>
                 ))}
               </select>

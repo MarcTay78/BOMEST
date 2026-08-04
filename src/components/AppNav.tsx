@@ -7,7 +7,6 @@ export function AppNav() {
     <nav className="app-nav">
       <span className="nav-brand">ESTAY</span>
       <NavLink to="/products">Products</NavLink>
-      <NavLink to="/hardware">Hardware</NavLink>
       <NavLink to="/materials">Materials</NavLink>
       <NavLink to="/dashboard">Dashboard</NavLink>
       <NavLink to="/lists">Lists</NavLink>
