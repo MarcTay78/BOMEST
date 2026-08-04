@@ -69,7 +69,7 @@ removeMaterialComponent(id: string): Promise<void>;
 
 `createMaterial`'s input gains `isComposite: boolean` (defaults handled by the caller, not the interface — the two call sites, simple vs composite, pass it explicitly).
 
-`deleteMaterial` extends its existing "blocked by bom_lines" check to also count `material_components` rows where `component_material_id` matches, and blocks with the existing `DeleteBlockedError` (message noun becomes "product(s) or material recipe(s)" when both kinds of usage exist, or stays singular-noun when only one does).
+`deleteMaterial` extends its existing "blocked by bom_lines" check to also count `material_components` rows where `component_material_id` matches, summing both counts into one `DeleteBlockedError`. The UI's blocked message always reads "used in N product(s) or recipe(s)" regardless of which usage kind(s) actually contributed to N.
 
 Implement in both `mockStore.ts` and `supabaseStore.ts`, following each file's existing conventions.
 

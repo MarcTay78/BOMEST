@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { buildCategoryColorMap, CostRankingChart, type RankingRow } from '../components/charts/CostRankingChart';
 import { PriceTrendChart, type TrendPoint } from '../components/charts/PriceTrendChart';
 import { dataStore } from '../data';
-import { computeProductCost, formatCurrency } from '../lib/costCalc';
+import { computeEffectivePrice, computeProductCost, formatCurrency } from '../lib/costCalc';
 import type { BomLine, Material, MaterialComponent, Product } from '../lib/types';
 
 export function Dashboard() {
@@ -71,11 +71,11 @@ export function Dashboard() {
     dataStore.getPriceHistory(selectedMaterialId).then((history) => {
       const points: TrendPoint[] = [
         ...history.map((h) => ({ label: h.changedAt, price: h.oldPrice })),
-        { label: 'Now', price: material.currentPrice },
+        { label: 'Now', price: computeEffectivePrice(material, materialsById, componentsByMaterialId).price },
       ];
       setTrendPoints(points);
     });
-  }, [selectedMaterialId, materialsById]);
+  }, [selectedMaterialId, materialsById, componentsByMaterialId]);
 
   const selectedMaterial = materialsById.get(selectedMaterialId);
 
@@ -117,7 +117,7 @@ export function Dashboard() {
           <PriceTrendChart points={trendPoints} />
           {selectedMaterial && (
             <p className="note" style={{ margin: '8px 0 0' }}>
-              Current price: <strong>{formatCurrency(selectedMaterial.currentPrice)}</strong> / {selectedMaterial.unit}
+              Current price: <strong>{formatCurrency(computeEffectivePrice(selectedMaterial, materialsById, componentsByMaterialId).price)}</strong> / {selectedMaterial.unit}
             </p>
           )}
         </div>
