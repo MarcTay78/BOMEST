@@ -4,6 +4,8 @@ export type Role = 'admin' | 'viewer';
 export type MaterialCategory = string;
 export type ProductCategory = string;
 
+export const HARDWARE_CATEGORY = 'Hardware';
+
 export interface Material {
   id: string;
   name: string;
