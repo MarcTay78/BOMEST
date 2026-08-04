@@ -4,7 +4,7 @@ import { useIsAdmin } from '../auth/AuthContext';
 import { PlusIcon } from '../components/icons';
 import { dataStore } from '../data';
 import { computeProductCost, formatCurrency } from '../lib/costCalc';
-import type { BomLine, Material, Product } from '../lib/types';
+import { HARDWARE_CATEGORY, type BomLine, type Material, type Product } from '../lib/types';
 
 type SortKey = 'cost' | 'name';
 
@@ -13,8 +13,9 @@ export function ProductList() {
   const [products, setProducts] = useState<Product[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [bomLinesByProduct, setBomLinesByProduct] = useState<Record<string, BomLine[]>>({});
-  const [sort, setSort] = useState<SortKey>('cost');
+  const [sort, setSort] = useState<SortKey>('name');
   const [loading, setLoading] = useState(true);
+  const [activeCategory, setActiveCategory] = useState('All');
 
   useEffect(() => {
     (async () => {
@@ -29,13 +30,21 @@ export function ProductList() {
 
   const materialsById = useMemo(() => new Map(materials.map((m) => [m.id, m])), [materials]);
 
+  const catalogProducts = useMemo(() => products.filter((p) => p.category !== HARDWARE_CATEGORY), [products]);
+
+  const categories = useMemo(
+    () => Array.from(new Set(catalogProducts.map((p) => p.category).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
+    [catalogProducts],
+  );
+
   const rows = useMemo(() => {
-    const withCost = products.map((p) => ({
+    const filtered = activeCategory === 'All' ? catalogProducts : catalogProducts.filter((p) => p.category === activeCategory);
+    const withCost = filtered.map((p) => ({
       product: p,
       cost: computeProductCost(p, bomLinesByProduct[p.id] ?? [], materialsById),
     }));
     return withCost.sort((a, b) => (sort === 'cost' ? b.cost.total - a.cost.total : a.product.name.localeCompare(b.product.name)));
-  }, [products, bomLinesByProduct, materialsById, sort]);
+  }, [catalogProducts, bomLinesByProduct, materialsById, sort, activeCategory]);
 
   if (loading) return null;
 
@@ -44,7 +53,7 @@ export function ProductList() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 22 }}>
         <div>
           <h1 style={{ marginBottom: 2 }}>Products</h1>
-          <p className="text-muted" style={{ margin: 0, fontSize: 13 }}>{products.length} in the catalog · cost calculated live</p>
+          <p className="text-muted" style={{ margin: 0, fontSize: 13 }}>{catalogProducts.length} in the catalog · cost calculated live</p>
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <div className="seg">
@@ -61,6 +70,19 @@ export function ProductList() {
             </Link>
           )}
         </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 6, marginBottom: 18, flexWrap: 'wrap' }}>
+        {['All', ...categories].map((cat) => (
+          <button
+            key={cat}
+            type="button"
+            className={cat === activeCategory ? 'btn btn-primary' : 'btn btn-secondary'}
+            onClick={() => setActiveCategory(cat)}
+          >
+            {cat}
+          </button>
+        ))}
       </div>
 
       {rows.length === 0 ? (
