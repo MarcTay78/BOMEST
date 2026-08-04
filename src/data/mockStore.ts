@@ -1,4 +1,4 @@
-import type { BomLine, ListKind, ListOption, Material, PriceHistoryPoint, Product, Session } from '../lib/types';
+import type { BomLine, ListKind, ListOption, Material, MaterialComponent, PriceHistoryPoint, Product, Session } from '../lib/types';
 import { DeleteBlockedError, type DataStore } from './DataStore';
 
 // ponytail: in-memory only, resets on reload. Swap to supabaseStore by setting
@@ -11,14 +11,14 @@ const MOCK_USERS: Record<string, { password: string; role: Session['role'] }> = 
 const SESSION_KEY = 'bomest_mock_session';
 
 let materials: Material[] = [
-  { id: 'm1', name: 'Oak Lumber', category: 'Wood', item: 'Lumber', type: 'S4S', size: '', unit: 'm3', currentPrice: 850, updatedAt: '2026-07-12' },
-  { id: 'm2', name: 'Walnut Lumber', category: 'Wood', item: 'Lumber', type: 'S4S', size: '', unit: 'm3', currentPrice: 1450, updatedAt: '2026-07-12' },
-  { id: 'm3', name: 'Maple Lumber', category: 'Wood', item: 'Lumber', type: 'RBW', size: '', unit: 'm3', currentPrice: 980, updatedAt: '2026-06-28' },
-  { id: 'm4', name: 'Steel Bracket', category: 'Hardware', item: 'Bracket', type: '', size: '', unit: 'pcs', currentPrice: 2.1, updatedAt: '2026-07-03' },
-  { id: 'm5', name: 'Wood Screw 40mm', category: 'Hardware', item: 'Screw', type: '', size: '40mm', unit: 'pcs', currentPrice: 0.08, updatedAt: '2026-07-03' },
-  { id: 'm6', name: 'Danish Oil Finish', category: 'Finish', item: 'Oil', type: '', size: '', unit: 'L', currentPrice: 18.5, updatedAt: '2026-05-20' },
-  { id: 'm7', name: 'Felt Pads', category: 'Packaging', item: 'Pads', type: '', size: '', unit: 'pcs', currentPrice: 0.35, updatedAt: '2026-06-02' },
-  { id: 'm8', name: 'Corrugated Box — Large', category: 'Packaging', item: 'Box', type: '', size: 'Large', unit: 'pcs', currentPrice: 4.2, updatedAt: '2026-06-02' },
+  { id: 'm1', name: 'Oak Lumber', category: 'Wood', item: 'Lumber', type: 'S4S', size: '', unit: 'm3', currentPrice: 850, isComposite: false, updatedAt: '2026-07-12' },
+  { id: 'm2', name: 'Walnut Lumber', category: 'Wood', item: 'Lumber', type: 'S4S', size: '', unit: 'm3', currentPrice: 1450, isComposite: false, updatedAt: '2026-07-12' },
+  { id: 'm3', name: 'Maple Lumber', category: 'Wood', item: 'Lumber', type: 'RBW', size: '', unit: 'm3', currentPrice: 980, isComposite: false, updatedAt: '2026-06-28' },
+  { id: 'm4', name: 'Steel Bracket', category: 'Hardware', item: 'Bracket', type: '', size: '', unit: 'pcs', currentPrice: 2.1, isComposite: false, updatedAt: '2026-07-03' },
+  { id: 'm5', name: 'Wood Screw 40mm', category: 'Hardware', item: 'Screw', type: '', size: '40mm', unit: 'pcs', currentPrice: 0.08, isComposite: false, updatedAt: '2026-07-03' },
+  { id: 'm6', name: 'Danish Oil Finish', category: 'Finish', item: 'Oil', type: '', size: '', unit: 'L', currentPrice: 18.5, isComposite: false, updatedAt: '2026-05-20' },
+  { id: 'm7', name: 'Felt Pads', category: 'Packaging', item: 'Pads', type: '', size: '', unit: 'pcs', currentPrice: 0.35, isComposite: false, updatedAt: '2026-06-02' },
+  { id: 'm8', name: 'Corrugated Box — Large', category: 'Packaging', item: 'Box', type: '', size: 'Large', unit: 'pcs', currentPrice: 4.2, isComposite: false, updatedAt: '2026-06-02' },
 ];
 
 let priceHistory: PriceHistoryPoint[] = [
@@ -36,6 +36,8 @@ let products: Product[] = [
   { id: 'p5', name: 'Farmhouse Bench Table', category: 'table', photoUrl: null, laborCost: 95, obsolete: false, createdAt: '2026-03-01' },
   { id: 'p6', name: 'Café Chair', category: 'chair', photoUrl: null, laborCost: 0, obsolete: false, createdAt: '2026-03-01' },
 ];
+
+let materialComponents: MaterialComponent[] = [];
 
 let bomLines: BomLine[] = [
   { id: 'b1', productId: 'p1', materialId: 'm1', quantity: 0.18, remarks: '' },
@@ -152,12 +154,26 @@ export const mockStore: DataStore = {
     return updated;
   },
   async deleteMaterial(id) {
-    const usedByCount = bomLines.filter((l) => l.materialId === id).length;
+    const bomCount = bomLines.filter((l) => l.materialId === id).length;
+    const componentCount = materialComponents.filter((c) => c.componentMaterialId === id).length;
+    const usedByCount = bomCount + componentCount;
     if (usedByCount > 0) throw new DeleteBlockedError(usedByCount);
     materials = materials.filter((m) => m.id !== id);
   },
   async getPriceHistory(materialId) {
     return priceHistory.filter((h) => h.materialId === materialId).sort((a, b) => a.changedAt.localeCompare(b.changedAt));
+  },
+
+  async listMaterialComponents() {
+    return [...materialComponents];
+  },
+  async addMaterialComponent(materialId, componentMaterialId, quantity) {
+    const component: MaterialComponent = { id: newId('mc'), materialId, componentMaterialId, quantity };
+    materialComponents = [...materialComponents, component];
+    return component;
+  },
+  async removeMaterialComponent(id) {
+    materialComponents = materialComponents.filter((c) => c.id !== id);
   },
 
   async listProducts() {

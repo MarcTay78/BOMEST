@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabaseClient';
-import type { BomLine, ListKind, ListOption, Material, PriceHistoryPoint, Product, Session } from '../lib/types';
+import type { BomLine, ListKind, ListOption, Material, MaterialComponent, PriceHistoryPoint, Product, Session } from '../lib/types';
 import { DeleteBlockedError, type DataStore } from './DataStore';
 
 // Maps snake_case DB rows (see supabase/migrations/0001_init.sql) to the
@@ -19,7 +19,15 @@ const toMaterial = (row: any): Material => ({
   size: row.size,
   unit: row.unit,
   currentPrice: Number(row.current_price),
+  isComposite: row.is_composite,
   updatedAt: row.updated_at,
+});
+
+const toMaterialComponent = (row: any): MaterialComponent => ({
+  id: row.id,
+  materialId: row.material_id,
+  componentMaterialId: row.component_material_id,
+  quantity: Number(row.quantity),
 });
 
 const toOption = (row: any): ListOption => ({ id: row.id, name: row.name });
@@ -100,6 +108,7 @@ export const supabaseStore: DataStore = {
         size: input.size,
         unit: input.unit,
         current_price: input.currentPrice,
+        is_composite: input.isComposite,
       })
       .select()
       .single();
@@ -130,12 +139,18 @@ export const supabaseStore: DataStore = {
   },
   async deleteMaterial(id) {
     const client = requireClient();
-    const { count, error: countError } = await client
+    const { count: bomCount, error: bomCountError } = await client
       .from('bom_lines')
       .select('id', { count: 'exact', head: true })
       .eq('material_id', id);
-    if (countError) throw countError;
-    if (count && count > 0) throw new DeleteBlockedError(count);
+    if (bomCountError) throw bomCountError;
+    const { count: componentCount, error: componentCountError } = await client
+      .from('material_components')
+      .select('id', { count: 'exact', head: true })
+      .eq('component_material_id', id);
+    if (componentCountError) throw componentCountError;
+    const usedByCount = (bomCount ?? 0) + (componentCount ?? 0);
+    if (usedByCount > 0) throw new DeleteBlockedError(usedByCount);
     const { error } = await client.from('materials').delete().eq('id', id);
     if (error) throw error;
   },
@@ -147,6 +162,25 @@ export const supabaseStore: DataStore = {
       .order('changed_at', { ascending: true });
     if (error) throw error;
     return data.map(toHistoryPoint);
+  },
+
+  async listMaterialComponents() {
+    const { data, error } = await requireClient().from('material_components').select('*');
+    if (error) throw error;
+    return data.map(toMaterialComponent);
+  },
+  async addMaterialComponent(materialId, componentMaterialId, quantity) {
+    const { data, error } = await requireClient()
+      .from('material_components')
+      .insert({ material_id: materialId, component_material_id: componentMaterialId, quantity })
+      .select()
+      .single();
+    if (error) throw error;
+    return toMaterialComponent(data);
+  },
+  async removeMaterialComponent(id) {
+    const { error } = await requireClient().from('material_components').delete().eq('id', id);
+    if (error) throw error;
   },
 
   async listProducts() {

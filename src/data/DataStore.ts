@@ -1,4 +1,4 @@
-import type { BomLine, ListKind, ListOption, Material, PriceHistoryPoint, Product, Session } from '../lib/types';
+import type { BomLine, ListKind, ListOption, Material, MaterialComponent, PriceHistoryPoint, Product, Session } from '../lib/types';
 
 export interface DataStore {
   signIn(email: string, password: string): Promise<Session>;
@@ -10,9 +10,14 @@ export interface DataStore {
   /** Logs the pre-edit price to history, then applies newPrice. */
   updateMaterialPrice(id: string, newPrice: number): Promise<Material>;
   updateMaterial(id: string, patch: Partial<Pick<Material, 'name' | 'category' | 'item' | 'type' | 'size' | 'unit'>>): Promise<Material>;
-  /** Throws DeleteBlockedError if referenced by any bom_lines row. */
+  /** Throws DeleteBlockedError if referenced by any bom_lines or material_components row. */
   deleteMaterial(id: string): Promise<void>;
   getPriceHistory(materialId: string): Promise<PriceHistoryPoint[]>;
+
+  /** Unscoped — the whole table, grouped client-side by materialId (small catalog, matches listMaterials/listOptions style). */
+  listMaterialComponents(): Promise<MaterialComponent[]>;
+  addMaterialComponent(materialId: string, componentMaterialId: string, quantity: number): Promise<MaterialComponent>;
+  removeMaterialComponent(id: string): Promise<void>;
 
   listProducts(): Promise<Product[]>;
   getProduct(id: string): Promise<Product | null>;

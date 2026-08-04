@@ -13,7 +13,15 @@ export interface Material {
   size: string;
   unit: string;
   currentPrice: number;
+  isComposite: boolean;
   updatedAt: string;
+}
+
+export interface MaterialComponent {
+  id: string;
+  materialId: string;
+  componentMaterialId: string;
+  quantity: number;
 }
 
 export interface PriceHistoryPoint {
