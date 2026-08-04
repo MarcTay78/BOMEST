@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { computeEffectiveUnit, formatCurrency } from '../lib/costCalc';
-import type { BomLine, Material } from '../lib/types';
+import { computeEffectivePrice, formatCurrency } from '../lib/costCalc';
+import type { BomLine, Material, MaterialComponent } from '../lib/types';
 import { TrashIcon } from './icons';
 
 interface Props {
   bomLines: BomLine[];
   materials: Material[];
+  componentsByMaterialId: Map<string, MaterialComponent[]>;
   editable: boolean;
   onAdd: (materialId: string, quantity: number, remarks: string) => void;
   onRemove: (id: string) => void;
@@ -14,7 +15,7 @@ interface Props {
 
 const COLUMN_COUNT = 9;
 
-export function BomTable({ bomLines, materials, editable, onAdd, onRemove, onUpdateRemarks }: Props) {
+export function BomTable({ bomLines, materials, componentsByMaterialId, editable, onAdd, onRemove, onUpdateRemarks }: Props) {
   const materialsById = new Map(materials.map((m) => [m.id, m]));
   const [materialId, setMaterialId] = useState('');
   const [qty, setQty] = useState('');
@@ -59,7 +60,7 @@ export function BomTable({ bomLines, materials, editable, onAdd, onRemove, onUpd
           return sorted.map(({ line, material }) => {
             const showCategory = material.category !== previousCategory;
             previousCategory = material.category;
-            const effective = computeEffectiveUnit(material);
+            const effective = computeEffectivePrice(material, materialsById, componentsByMaterialId);
             return (
               <tr key={line.id}>
                 <td>{showCategory ? material.category || '—' : ''}</td>
@@ -108,12 +109,12 @@ export function BomTable({ bomLines, materials, editable, onAdd, onRemove, onUpd
               </select>
             </td>
             <td style={{ textAlign: 'right' }} className="text-muted">
-              {selectedMaterial ? formatCurrency(computeEffectiveUnit(selectedMaterial).price) : '—'}
+              {selectedMaterial ? formatCurrency(computeEffectivePrice(selectedMaterial, materialsById, componentsByMaterialId).price) : '—'}
             </td>
             <td>
               <input className="input" style={{ minHeight: 32 }} placeholder="qty" value={qty} onChange={(e) => setQty(e.target.value)} />
             </td>
-            <td className="text-muted">{selectedMaterial ? computeEffectiveUnit(selectedMaterial).unit : '—'}</td>
+            <td className="text-muted">{selectedMaterial ? computeEffectivePrice(selectedMaterial, materialsById, componentsByMaterialId).unit : '—'}</td>
             <td>
               <input className="input" style={{ minHeight: 32 }} placeholder="remarks" value={remarks} onChange={(e) => setRemarks(e.target.value)} />
             </td>

@@ -3,11 +3,12 @@ import { buildCategoryColorMap, CostRankingChart, type RankingRow } from '../com
 import { PriceTrendChart, type TrendPoint } from '../components/charts/PriceTrendChart';
 import { dataStore } from '../data';
 import { computeProductCost, formatCurrency } from '../lib/costCalc';
-import type { BomLine, Material, Product } from '../lib/types';
+import type { BomLine, Material, MaterialComponent, Product } from '../lib/types';
 
 export function Dashboard() {
   const [products, setProducts] = useState<Product[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
+  const [materialComponents, setMaterialComponents] = useState<MaterialComponent[]>([]);
   const [bomLinesByProduct, setBomLinesByProduct] = useState<Record<string, BomLine[]>>({});
   const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -16,14 +17,16 @@ export function Dashboard() {
 
   useEffect(() => {
     (async () => {
-      const [productList, materialList, categoryList] = await Promise.all([
+      const [productList, materialList, categoryList, components] = await Promise.all([
         dataStore.listProducts(),
         dataStore.listMaterials(),
         dataStore.listOptions('product_categories'),
+        dataStore.listMaterialComponents(),
       ]);
       const bomEntries = await Promise.all(productList.map((p) => dataStore.listBomLines(p.id).then((lines) => [p.id, lines] as const)));
       setProducts(productList);
       setMaterials(materialList);
+      setMaterialComponents(components);
       setBomLinesByProduct(Object.fromEntries(bomEntries));
       setCategoryOptions(categoryList.map((c) => c.name));
       if (materialList.length > 0) setSelectedMaterialId(materialList[0].id);
@@ -31,6 +34,15 @@ export function Dashboard() {
   }, []);
 
   const materialsById = useMemo(() => new Map(materials.map((m) => [m.id, m])), [materials]);
+  const componentsByMaterialId = useMemo(() => {
+    const map = new Map<string, MaterialComponent[]>();
+    for (const c of materialComponents) {
+      const list = map.get(c.materialId) ?? [];
+      list.push(c);
+      map.set(c.materialId, list);
+    }
+    return map;
+  }, [materialComponents]);
 
   const rankingRows: RankingRow[] = useMemo(() => {
     return products
@@ -39,10 +51,10 @@ export function Dashboard() {
         id: p.id,
         name: p.name,
         category: p.category,
-        total: computeProductCost(p, bomLinesByProduct[p.id] ?? [], materialsById).total,
+        total: computeProductCost(p, bomLinesByProduct[p.id] ?? [], materialsById, componentsByMaterialId).total,
       }))
       .sort((a, b) => b.total - a.total);
-  }, [products, bomLinesByProduct, materialsById, categoryFilter]);
+  }, [products, bomLinesByProduct, materialsById, componentsByMaterialId, categoryFilter]);
 
   const legend = useMemo(() => {
     const colorMap = buildCategoryColorMap(rankingRows.map((r) => r.category));

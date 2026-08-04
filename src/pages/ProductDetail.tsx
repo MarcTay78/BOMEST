@@ -8,7 +8,7 @@ import { OptionSelect } from '../components/OptionSelect';
 import { PhotoUpload } from '../components/PhotoUpload';
 import { dataStore } from '../data';
 import { computeProductCost } from '../lib/costCalc';
-import type { BomLine, Material, Product } from '../lib/types';
+import type { BomLine, Material, MaterialComponent, Product } from '../lib/types';
 
 export function ProductDetail() {
   const { id = '' } = useParams();
@@ -17,6 +17,7 @@ export function ProductDetail() {
   const [product, setProduct] = useState<Product | null | undefined>(undefined);
   const [bomLines, setBomLines] = useState<BomLine[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
+  const [materialComponents, setMaterialComponents] = useState<MaterialComponent[]>([]);
   const [laborInput, setLaborInput] = useState('');
   const [nameInput, setNameInput] = useState('');
   const [editingName, setEditingName] = useState(false);
@@ -33,10 +34,16 @@ export function ProductDetail() {
   };
 
   const reload = async () => {
-    const [p, lines, mats] = await Promise.all([dataStore.getProduct(id), dataStore.listBomLines(id), dataStore.listMaterials()]);
+    const [p, lines, mats, components] = await Promise.all([
+      dataStore.getProduct(id),
+      dataStore.listBomLines(id),
+      dataStore.listMaterials(),
+      dataStore.listMaterialComponents(),
+    ]);
     setProduct(p);
     setBomLines(lines);
     setMaterials(mats);
+    setMaterialComponents(components);
     if (p) {
       setLaborInput(String(p.laborCost));
       setNameInput(p.name);
@@ -49,7 +56,19 @@ export function ProductDetail() {
   }, [id]);
 
   const materialsById = useMemo(() => new Map(materials.map((m) => [m.id, m])), [materials]);
-  const cost = useMemo(() => (product ? computeProductCost(product, bomLines, materialsById) : null), [product, bomLines, materialsById]);
+  const componentsByMaterialId = useMemo(() => {
+    const map = new Map<string, MaterialComponent[]>();
+    for (const c of materialComponents) {
+      const list = map.get(c.materialId) ?? [];
+      list.push(c);
+      map.set(c.materialId, list);
+    }
+    return map;
+  }, [materialComponents]);
+  const cost = useMemo(
+    () => (product ? computeProductCost(product, bomLines, materialsById, componentsByMaterialId) : null),
+    [product, bomLines, materialsById, componentsByMaterialId],
+  );
 
   if (product === undefined) return null;
   if (product === null) return <Navigate to="/products" replace />;
@@ -168,6 +187,7 @@ export function ProductDetail() {
               <BomTable
                 bomLines={bomLines}
                 materials={materials}
+                componentsByMaterialId={componentsByMaterialId}
                 editable={isAdmin}
                 onAdd={(materialId, quantity, remarks) =>
                   runMutation(async () => {
