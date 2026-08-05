@@ -12,6 +12,9 @@ export const TrashIcon = () => (
 export const EditIcon = () => (
   <svg {...base}><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
 );
+export const CopyIcon = () => (
+  <svg {...base}><path d="M9 9h10v10H9zM5 15V5h10" /></svg>
+);
 export const WarningIcon = ({ size = 15 }: { size?: number }) => (
   <svg {...base} width={size} height={size}><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /></svg>
 );

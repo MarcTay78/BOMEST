@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useIsAdmin } from '../auth/AuthContext';
-import { EditIcon, PlusIcon, TrashIcon, WarningIcon } from '../components/icons';
+import { CopyIcon, EditIcon, PlusIcon, TrashIcon, WarningIcon } from '../components/icons';
 import { OptionSelect } from '../components/OptionSelect';
 import { DeleteBlockedError, dataStore } from '../data';
 import { computeEffectivePrice, formatCurrency, formatDate } from '../lib/costCalc';
@@ -134,6 +134,22 @@ export function Materials() {
     await reload();
   };
 
+  const handleDuplicate = async (m: Material) => {
+    const currentPrice = m.isComposite ? computeEffectivePrice(m, materialsById, componentsByMaterialId).price : m.currentPrice;
+    const copy = await dataStore.createMaterial({
+      name: `${m.name} (copy)`,
+      category: m.category,
+      item: m.item,
+      type: m.type,
+      size: m.size,
+      unit: m.unit,
+      currentPrice,
+      isComposite: false,
+    });
+    await reload();
+    startEdit(copy);
+  };
+
   return (
     <div className="content">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 18 }}>
@@ -227,6 +243,7 @@ export function Materials() {
                               Recipe
                             </button>
                           )}
+                          <button type="button" className="btn btn-ghost btn-icon" aria-label="Duplicate" onClick={() => handleDuplicate(m)}><CopyIcon /></button>
                           <button type="button" className="btn btn-ghost btn-icon" aria-label="Edit" onClick={() => startEdit(m)}><EditIcon /></button>
                           <button type="button" className="btn btn-ghost btn-icon" aria-label="Delete" onClick={() => handleDelete(m.id)}><TrashIcon /></button>
                         </td>
