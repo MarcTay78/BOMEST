@@ -178,6 +178,16 @@ export const supabaseStore: DataStore = {
     if (error) throw error;
     return toMaterialComponent(data);
   },
+  async updateMaterialComponent(id, quantity) {
+    const { data, error } = await requireClient()
+      .from('material_components')
+      .update({ quantity })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return toMaterialComponent(data);
+  },
   async removeMaterialComponent(id) {
     const { error } = await requireClient().from('material_components').delete().eq('id', id);
     if (error) throw error;

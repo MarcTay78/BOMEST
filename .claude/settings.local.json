@@ -4,7 +4,12 @@
       "Bash(npm create *)",
       "Bash(cp -n _scaffold/.gitignore .)",
       "Bash(cp -r _scaffold/. .)",
-      "Bash(rm -rf _scaffold)"
+      "Bash(rm -rf _scaffold)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(bash scripts/deploy-plesk.sh)",
+      "Bash(npx tsc *)"
     ]
   }
 }

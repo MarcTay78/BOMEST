@@ -172,6 +172,13 @@ export const mockStore: DataStore = {
     materialComponents = [...materialComponents, component];
     return component;
   },
+  async updateMaterialComponent(id, quantity) {
+    const component = materialComponents.find((c) => c.id === id);
+    if (!component) throw new Error('Component not found');
+    const updated = { ...component, quantity };
+    materialComponents = materialComponents.map((c) => (c.id === id ? updated : c));
+    return updated;
+  },
   async removeMaterialComponent(id) {
     materialComponents = materialComponents.filter((c) => c.id !== id);
   },

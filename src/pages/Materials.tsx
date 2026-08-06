@@ -129,6 +129,11 @@ export function Materials() {
     await reload();
   };
 
+  const updateRecipeComponent = async (componentId: string, quantity: number) => {
+    await dataStore.updateMaterialComponent(componentId, quantity);
+    await reload();
+  };
+
   const removeRecipeComponent = async (componentId: string) => {
     await dataStore.removeMaterialComponent(componentId);
     await reload();
@@ -259,6 +264,7 @@ export function Materials() {
                         materials={materials}
                         components={componentsByMaterialId.get(m.id) ?? []}
                         onAdd={(componentMaterialId, quantity) => addRecipeComponent(m.id, componentMaterialId, quantity)}
+                        onUpdateQuantity={updateRecipeComponent}
                         onRemove={removeRecipeComponent}
                       />
                     </td>
@@ -286,18 +292,21 @@ function RecipeEditor({
   materials,
   components,
   onAdd,
+  onUpdateQuantity,
   onRemove,
 }: {
   material: Material;
   materials: Material[];
   components: MaterialComponent[];
   onAdd: (componentMaterialId: string, quantity: number) => void;
+  onUpdateQuantity: (componentId: string, quantity: number) => void;
   onRemove: (componentId: string) => void;
 }) {
   const [componentMaterialId, setComponentMaterialId] = useState('');
   const [quantity, setQuantity] = useState('');
   const pickable = materials.filter((m) => !m.isComposite && m.id !== material.id);
   const materialsById = new Map(materials.map((m) => [m.id, m]));
+  const selectedComponent = materialsById.get(componentMaterialId);
 
   const submitAdd = () => {
     const qty = Number(quantity);
@@ -316,7 +325,21 @@ function RecipeEditor({
         return (
           <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0', fontSize: 13 }}>
             <span style={{ flex: 1 }}>{componentMaterial ? componentMaterial.name : 'Unknown material'}</span>
-            <span className="text-muted">× {c.quantity}</span>
+            <span className="text-muted">{componentMaterial ? `${formatCurrency(componentMaterial.currentPrice)} / ${componentMaterial.unit}` : '—'}</span>
+            <span className="text-muted">×</span>
+            <input
+              className="input"
+              style={{ minHeight: 26, width: 70 }}
+              defaultValue={c.quantity}
+              onBlur={(e) => {
+                const qty = Number(e.target.value);
+                if (qty > 0 && qty !== c.quantity) onUpdateQuantity(c.id, qty);
+                else e.target.value = String(c.quantity);
+              }}
+            />
+            <span style={{ minWidth: 70, textAlign: 'right' }}>
+              {componentMaterial ? formatCurrency(componentMaterial.currentPrice * c.quantity) : '—'}
+            </span>
             <button type="button" className="btn btn-ghost btn-icon" aria-label="Remove component" onClick={() => onRemove(c.id)}>
               <TrashIcon />
             </button>
@@ -330,6 +353,9 @@ function RecipeEditor({
             <option key={m.id} value={m.id}>{m.name}</option>
           ))}
         </select>
+        <span className="text-muted" style={{ minWidth: 90 }}>
+          {selectedComponent ? `${formatCurrency(selectedComponent.currentPrice)} / ${selectedComponent.unit}` : '—'}
+        </span>
         <input className="input" style={{ minHeight: 30, width: 80 }} placeholder="qty" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
         <button type="button" className="btn btn-secondary" onClick={submitAdd}>Add</button>
       </div>
@@ -407,15 +433,22 @@ function AddMaterialForm({ materials, onDone, onCancel }: { materials: Material[
       </label>
       {isComposite ? (
         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {recipeRows.map((row, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
-              <span style={{ flex: 1 }}>{pickableById.get(row.componentMaterialId)?.name ?? 'Unknown material'}</span>
-              <span className="text-muted">× {row.quantity}</span>
-              <button type="button" className="btn btn-ghost btn-icon" aria-label="Remove row" onClick={() => removeRecipeRow(i)}>
-                <TrashIcon />
-              </button>
-            </div>
-          ))}
+          {recipeRows.map((row, i) => {
+            const rowMaterial = pickableById.get(row.componentMaterialId);
+            return (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
+                <span style={{ flex: 1 }}>{rowMaterial?.name ?? 'Unknown material'}</span>
+                <span className="text-muted">{rowMaterial ? `${formatCurrency(rowMaterial.currentPrice)} / ${rowMaterial.unit}` : '—'}</span>
+                <span className="text-muted">× {row.quantity}</span>
+                <span style={{ minWidth: 70, textAlign: 'right' }}>
+                  {rowMaterial ? formatCurrency(rowMaterial.currentPrice * Number(row.quantity)) : '—'}
+                </span>
+                <button type="button" className="btn btn-ghost btn-icon" aria-label="Remove row" onClick={() => removeRecipeRow(i)}>
+                  <TrashIcon />
+                </button>
+              </div>
+            );
+          })}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <select className="input" style={{ minHeight: 32 }} value={recipeMaterialId} onChange={(e) => setRecipeMaterialId(e.target.value)}>
               <option value="">Choose material…</option>
@@ -423,6 +456,11 @@ function AddMaterialForm({ materials, onDone, onCancel }: { materials: Material[
                 <option key={m.id} value={m.id}>{m.name}</option>
               ))}
             </select>
+            <span className="text-muted" style={{ minWidth: 90 }}>
+              {recipeMaterialId && pickableById.get(recipeMaterialId)
+                ? `${formatCurrency(pickableById.get(recipeMaterialId)!.currentPrice)} / ${pickableById.get(recipeMaterialId)!.unit}`
+                : '—'}
+            </span>
             <input className="input" style={{ minHeight: 32, width: 80 }} placeholder="qty" value={recipeQty} onChange={(e) => setRecipeQty(e.target.value)} />
             <button type="button" className="btn btn-secondary" onClick={addRecipeRow}>Add row</button>
           </div>

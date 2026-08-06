@@ -17,6 +17,7 @@ export interface DataStore {
   /** Unscoped — the whole table, grouped client-side by materialId (small catalog, matches listMaterials/listOptions style). */
   listMaterialComponents(): Promise<MaterialComponent[]>;
   addMaterialComponent(materialId: string, componentMaterialId: string, quantity: number): Promise<MaterialComponent>;
+  updateMaterialComponent(id: string, quantity: number): Promise<MaterialComponent>;
   removeMaterialComponent(id: string): Promise<void>;
 
   listProducts(): Promise<Product[]>;
