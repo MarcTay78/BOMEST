@@ -26,7 +26,8 @@ export function BomTable({ bomLines, materials, componentsByMaterialId, editable
   const [pieces, setPieces] = useState('1');
   const selectedMaterial = materialsById.get(materialId);
   const selectedEffective = selectedMaterial ? computeEffectivePrice(selectedMaterial, materialsById, componentsByMaterialId) : null;
-  const calcMode = selectedEffective?.unit === 'm3' || selectedEffective?.unit === 'sqft' ? selectedEffective.unit : null;
+  const rawUnit = selectedMaterial?.unit.trim().toLowerCase();
+  const calcMode = rawUnit === 'm3' ? 'm3' : rawUnit === 'sqft' ? 'sqft' : null;
 
   const submitAdd = () => {
     const quantity = Number(qty);
