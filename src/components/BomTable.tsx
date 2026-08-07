@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { computeEffectivePrice, formatCurrency } from '../lib/costCalc';
+import { computeEffectivePrice, formatCurrency, MM2_PER_SQFT, MM3_PER_M3 } from '../lib/costCalc';
 import type { BomLine, Material, MaterialComponent } from '../lib/types';
 import { TrashIcon } from './icons';
 
@@ -20,7 +20,13 @@ export function BomTable({ bomLines, materials, componentsByMaterialId, editable
   const [materialId, setMaterialId] = useState('');
   const [qty, setQty] = useState('');
   const [remarks, setRemarks] = useState('');
+  const [dimL, setDimL] = useState('');
+  const [dimW, setDimW] = useState('');
+  const [dimH, setDimH] = useState('');
+  const [pieces, setPieces] = useState('1');
   const selectedMaterial = materialsById.get(materialId);
+  const selectedEffective = selectedMaterial ? computeEffectivePrice(selectedMaterial, materialsById, componentsByMaterialId) : null;
+  const calcMode = selectedEffective?.unit === 'm3' || selectedEffective?.unit === 'sqft' ? selectedEffective.unit : null;
 
   const submitAdd = () => {
     const quantity = Number(qty);
@@ -29,6 +35,21 @@ export function BomTable({ bomLines, materials, componentsByMaterialId, editable
     setMaterialId('');
     setQty('');
     setRemarks('');
+    setDimL('');
+    setDimW('');
+    setDimH('');
+    setPieces('1');
+  };
+
+  const recompute = (l: string, w: string, h: string, n: string) => {
+    const nl = Number(l), nw = Number(w), nh = Number(h), np = Number(n);
+    if (!nw || !nh || !np || nw <= 0 || nh <= 0 || np <= 0) return;
+    if (calcMode === 'm3') {
+      if (!nl || nl <= 0) return;
+      setQty(String((nl * nw * nh / MM3_PER_M3) * np));
+    } else if (calcMode === 'sqft') {
+      setQty(String((nw * nh / MM2_PER_SQFT) * np));
+    }
   };
 
   return (
@@ -69,6 +90,7 @@ export function BomTable({ bomLines, materials, componentsByMaterialId, editable
                 <td>{material.size || '—'}</td>
                 <td style={{ textAlign: 'right' }} title={effective.converted ? `${formatCurrency(material.currentPrice)} / m3` : undefined}>
                   {formatCurrency(effective.price)}
+                  {material.isEstimate && <span className="tag tag-neutral" style={{ marginLeft: 6 }}>Estimate</span>}
                 </td>
                 <td>{line.quantity}</td>
                 <td className="text-muted">{effective.unit}</td>
@@ -109,17 +131,59 @@ export function BomTable({ bomLines, materials, componentsByMaterialId, editable
               </select>
             </td>
             <td style={{ textAlign: 'right' }} className="text-muted">
-              {selectedMaterial ? formatCurrency(computeEffectivePrice(selectedMaterial, materialsById, componentsByMaterialId).price) : '—'}
+              {selectedEffective ? formatCurrency(selectedEffective.price) : '—'}
+              {selectedMaterial?.isEstimate && <span className="tag tag-neutral" style={{ marginLeft: 6 }}>Estimate</span>}
             </td>
             <td>
               <input className="input" style={{ minHeight: 32 }} placeholder="qty" value={qty} onChange={(e) => setQty(e.target.value)} />
             </td>
-            <td className="text-muted">{selectedMaterial ? computeEffectivePrice(selectedMaterial, materialsById, componentsByMaterialId).unit : '—'}</td>
+            <td className="text-muted">{selectedEffective ? selectedEffective.unit : '—'}</td>
             <td>
               <input className="input" style={{ minHeight: 32 }} placeholder="remarks" value={remarks} onChange={(e) => setRemarks(e.target.value)} />
             </td>
             <td colSpan={2}>
               <button type="button" className="btn btn-secondary" onClick={submitAdd}>Add line</button>
+            </td>
+          </tr>
+        )}
+        {editable && calcMode && (
+          <tr>
+            <td colSpan={COLUMN_COUNT + 1} style={{ padding: '6px 4px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }} className="text-muted">
+                <span>Compute qty from size (mm), always in mm:</span>
+                {calcMode === 'm3' && (
+                  <input
+                    className="input"
+                    style={{ minHeight: 28, width: 70 }}
+                    placeholder="L"
+                    value={dimL}
+                    onChange={(e) => { setDimL(e.target.value); recompute(e.target.value, dimW, dimH, pieces); }}
+                  />
+                )}
+                <input
+                  className="input"
+                  style={{ minHeight: 28, width: 70 }}
+                  placeholder="W"
+                  value={dimW}
+                  onChange={(e) => { setDimW(e.target.value); recompute(dimL, e.target.value, dimH, pieces); }}
+                />
+                <input
+                  className="input"
+                  style={{ minHeight: 28, width: 70 }}
+                  placeholder="H"
+                  value={dimH}
+                  onChange={(e) => { setDimH(e.target.value); recompute(dimL, dimW, e.target.value, pieces); }}
+                />
+                <span>×</span>
+                <input
+                  className="input"
+                  style={{ minHeight: 28, width: 60 }}
+                  placeholder="pieces"
+                  value={pieces}
+                  onChange={(e) => { setPieces(e.target.value); recompute(dimL, dimW, dimH, e.target.value); }}
+                />
+                <span>pcs → fills Qty in {calcMode}</span>
+              </div>
             </td>
           </tr>
         )}

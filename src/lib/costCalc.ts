@@ -14,8 +14,8 @@ export interface ProductCost {
   categoryTotals: { category: string; total: number }[];
 }
 
-const MM3_PER_M3 = 1_000_000_000;
-const MM2_PER_SQFT = 92903.04;
+export const MM3_PER_M3 = 1_000_000_000;
+export const MM2_PER_SQFT = 92903.04;
 
 /** "24x590x915" (mm) -> [24, 590, 915]. Null if not exactly 3 positive numbers. */
 export function parseSizeMm(size: string): [number, number, number] | null {
