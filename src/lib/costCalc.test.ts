@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeCategoryBreakdown, computeEffectivePrice, computeEffectiveUnit, computeProductCost, formatCurrency, parseSizeMm, parseSizeMm2 } from './costCalc';
+import { computeCategoryBreakdown, computeEffectivePrice, computeEffectiveUnit, computeProductCost, formatCurrency, formatUnitPrice, parseSizeMm, parseSizeMm2 } from './costCalc';
 import type { BomLine, Material, MaterialComponent } from './types';
 
 const materials: Material[] = [
@@ -202,6 +202,15 @@ describe('formatCurrency', () => {
     expect(formatCurrency(850)).toBe('$850.00');
     expect(formatCurrency(1234.5)).toBe('$1,234.50');
     expect(formatCurrency(0)).toBe('$0.00');
+  });
+});
+
+describe('formatUnitPrice', () => {
+  it('shows up to 4 decimals, never fewer than 2', () => {
+    expect(formatUnitPrice(0.0842)).toBe('$0.0842');
+    expect(formatUnitPrice(2.1)).toBe('$2.10');
+    expect(formatUnitPrice(850)).toBe('$850.00');
+    expect(formatUnitPrice(1234.56789)).toBe('$1,234.5679');
   });
 });
 

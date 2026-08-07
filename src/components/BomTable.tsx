@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { computeEffectivePrice, formatCurrency, MM2_PER_SQFT, MM3_PER_M3 } from '../lib/costCalc';
+import { computeEffectivePrice, formatCurrency, formatUnitPrice, MM2_PER_SQFT, MM3_PER_M3 } from '../lib/costCalc';
 import type { BomLine, Material, MaterialComponent } from '../lib/types';
 import { TrashIcon } from './icons';
 
@@ -91,8 +91,8 @@ export function BomTable({ bomLines, materials, componentsByMaterialId, editable
                 <td>{material.item || '—'}</td>
                 <td>{material.type || '—'}</td>
                 <td>{material.size || '—'}</td>
-                <td style={{ textAlign: 'right' }} title={effective.converted ? `${formatCurrency(material.currentPrice)} / m3` : undefined}>
-                  {formatCurrency(effective.price)}
+                <td style={{ textAlign: 'right' }} title={effective.converted ? `${formatUnitPrice(material.currentPrice)} / m3` : undefined}>
+                  {formatUnitPrice(effective.price)}
                   {material.isEstimate && <span className="tag tag-neutral" style={{ marginLeft: 6 }}>Estimate</span>}
                 </td>
                 <td>{Number(line.quantity.toFixed(4))}</td>
@@ -134,7 +134,7 @@ export function BomTable({ bomLines, materials, componentsByMaterialId, editable
               </select>
             </td>
             <td style={{ textAlign: 'right' }} className="text-muted">
-              {selectedEffective ? formatCurrency(selectedEffective.price) : '—'}
+              {selectedEffective ? formatUnitPrice(selectedEffective.price) : '—'}
               {selectedMaterial?.isEstimate && <span className="tag tag-neutral" style={{ marginLeft: 6 }}>Estimate</span>}
             </td>
             <td>

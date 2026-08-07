@@ -120,6 +120,12 @@ export function formatCurrency(value: number): string {
   return '$' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+/** Same as formatCurrency but keeps up to 4 decimals — for per-unit prices (e.g. $0.0842/pcs)
+ *  where rounding to 2 decimals would hide real precision. Totals/line-costs use formatCurrency. */
+export function formatUnitPrice(value: number): string {
+  return '$' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+}
+
 /** DD/MMM/YYYY, e.g. 12/Jul/2026. Uses UTC fields so a date-only string doesn't shift a day in negative-offset timezones. */
 export function formatDate(value: string): string {
   const d = new Date(value);
