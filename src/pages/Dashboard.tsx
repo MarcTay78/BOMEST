@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { buildCategoryColorMap, CostRankingChart, type RankingRow } from '../components/charts/CostRankingChart';
 import { PriceTrendChart, type TrendPoint } from '../components/charts/PriceTrendChart';
 import { dataStore } from '../data';
-import { computeEffectivePrice, computeProductCost, formatCurrency } from '../lib/costCalc';
+import { computeEffectivePrice, computeProductCost, formatUnitPrice } from '../lib/costCalc';
 import type { BomLine, Material, MaterialComponent, Product } from '../lib/types';
 
 export function Dashboard() {
@@ -115,11 +115,14 @@ export function Dashboard() {
             </select>
           </div>
           <PriceTrendChart points={trendPoints} />
-          {selectedMaterial && (
-            <p className="note" style={{ margin: '8px 0 0' }}>
-              Current price: <strong>{formatCurrency(computeEffectivePrice(selectedMaterial, materialsById, componentsByMaterialId).price)}</strong> / {selectedMaterial.unit}
-            </p>
-          )}
+          {selectedMaterial && (() => {
+            const { price, unit } = computeEffectivePrice(selectedMaterial, materialsById, componentsByMaterialId);
+            return (
+              <p className="note" style={{ margin: '8px 0 0' }}>
+                Current price: <strong>{formatUnitPrice(price)}</strong> / {unit}
+              </p>
+            );
+          })()}
         </div>
       </div>
     </div>

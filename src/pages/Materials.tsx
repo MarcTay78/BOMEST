@@ -3,7 +3,7 @@ import { useIsAdmin } from '../auth/AuthContext';
 import { CopyIcon, EditIcon, PlusIcon, TrashIcon, WarningIcon } from '../components/icons';
 import { OptionSelect } from '../components/OptionSelect';
 import { DeleteBlockedError, dataStore } from '../data';
-import { computeEffectivePrice, formatCurrency, formatDate } from '../lib/costCalc';
+import { computeEffectivePrice, formatCurrency, formatDate, formatUnitPrice } from '../lib/costCalc';
 import type { Material, MaterialComponent } from '../lib/types';
 
 interface Draft {
@@ -96,24 +96,32 @@ export function Materials() {
   };
 
   const commitEdit = async (m: Material) => {
-    setEditingId(null);
     if (!draft) return;
-    if (!m.isComposite) {
-      const price = Number(draft.price);
-      if (Number.isNaN(price) || price < 0) return;
-      if (price !== m.currentPrice) await dataStore.updateMaterialPrice(m.id, price);
+    setBlockedMessage(null);
+    try {
+      if (!m.isComposite) {
+        const price = Number(draft.price);
+        if (Number.isNaN(price) || price < 0) {
+          setBlockedMessage('Enter a valid, non-negative price.');
+          return;
+        }
+        if (price !== m.currentPrice) await dataStore.updateMaterialPrice(m.id, price);
+      }
+      await dataStore.updateMaterial(m.id, {
+        name: draft.name.trim() || m.name,
+        category: draft.category,
+        item: draft.item,
+        type: draft.type,
+        size: draft.size,
+        unit: draft.unit,
+        isEstimate: draft.isEstimate,
+      });
+      setEditingId(null);
+      setDraft(null);
+      await reload();
+    } catch (err) {
+      setBlockedMessage(err instanceof Error ? err.message : 'Save failed.');
     }
-    await dataStore.updateMaterial(m.id, {
-      name: draft.name.trim() || m.name,
-      category: draft.category,
-      item: draft.item,
-      type: draft.type,
-      size: draft.size,
-      unit: draft.unit,
-      isEstimate: draft.isEstimate,
-    });
-    setDraft(null);
-    await reload();
   };
 
   const handleDelete = async (id: string) => {
@@ -221,7 +229,7 @@ export function Materials() {
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         {m.isComposite ? (
-                          <span>{formatCurrency(computeEffectivePrice(m, materialsById, componentsByMaterialId).price)}</span>
+                          <span>{formatUnitPrice(computeEffectivePrice(m, materialsById, componentsByMaterialId).price)}</span>
                         ) : (
                           <input
                             className="input"
@@ -249,7 +257,7 @@ export function Materials() {
                       <td className="text-muted">{m.size || '—'}</td>
                       <td className="text-muted">{m.unit}</td>
                       <td style={{ textAlign: 'right' }}>
-                        {formatCurrency(m.isComposite ? computeEffectivePrice(m, materialsById, componentsByMaterialId).price : m.currentPrice)} / {m.unit}
+                        {formatUnitPrice(m.isComposite ? computeEffectivePrice(m, materialsById, componentsByMaterialId).price : m.currentPrice)} / {m.unit}
                       </td>
                       <td className="text-muted">{formatDate(m.updatedAt)}</td>
                       {isAdmin && (
@@ -336,7 +344,7 @@ function RecipeEditor({
         return (
           <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0', fontSize: 13 }}>
             <span style={{ flex: 1 }}>{componentMaterial ? componentMaterial.name : 'Unknown material'}</span>
-            <span className="text-muted">{componentMaterial ? `${formatCurrency(componentMaterial.currentPrice)} / ${componentMaterial.unit}` : '—'}</span>
+            <span className="text-muted">{componentMaterial ? `${formatUnitPrice(componentMaterial.currentPrice)} / ${componentMaterial.unit}` : '—'}</span>
             <span className="text-muted">×</span>
             <input
               className="input"
@@ -365,7 +373,7 @@ function RecipeEditor({
           ))}
         </select>
         <span className="text-muted" style={{ minWidth: 90 }}>
-          {selectedComponent ? `${formatCurrency(selectedComponent.currentPrice)} / ${selectedComponent.unit}` : '—'}
+          {selectedComponent ? `${formatUnitPrice(selectedComponent.currentPrice)} / ${selectedComponent.unit}` : '—'}
         </span>
         <input className="input" style={{ minHeight: 30, width: 80 }} placeholder="qty" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
         <button type="button" className="btn btn-secondary" onClick={submitAdd}>Add</button>
@@ -454,7 +462,7 @@ function AddMaterialForm({ materials, onDone, onCancel }: { materials: Material[
             return (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
                 <span style={{ flex: 1 }}>{rowMaterial?.name ?? 'Unknown material'}</span>
-                <span className="text-muted">{rowMaterial ? `${formatCurrency(rowMaterial.currentPrice)} / ${rowMaterial.unit}` : '—'}</span>
+                <span className="text-muted">{rowMaterial ? `${formatUnitPrice(rowMaterial.currentPrice)} / ${rowMaterial.unit}` : '—'}</span>
                 <span className="text-muted">× {row.quantity}</span>
                 <span style={{ minWidth: 70, textAlign: 'right' }}>
                   {rowMaterial ? formatCurrency(rowMaterial.currentPrice * Number(row.quantity)) : '—'}
@@ -474,7 +482,7 @@ function AddMaterialForm({ materials, onDone, onCancel }: { materials: Material[
             </select>
             <span className="text-muted" style={{ minWidth: 90 }}>
               {recipeMaterialId && pickableById.get(recipeMaterialId)
-                ? `${formatCurrency(pickableById.get(recipeMaterialId)!.currentPrice)} / ${pickableById.get(recipeMaterialId)!.unit}`
+                ? `${formatUnitPrice(pickableById.get(recipeMaterialId)!.currentPrice)} / ${pickableById.get(recipeMaterialId)!.unit}`
                 : '—'}
             </span>
             <input className="input" style={{ minHeight: 32, width: 80 }} placeholder="qty" value={recipeQty} onChange={(e) => setRecipeQty(e.target.value)} />
