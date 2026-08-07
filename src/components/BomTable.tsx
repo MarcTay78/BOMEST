@@ -42,14 +42,16 @@ export function BomTable({ bomLines, materials, componentsByMaterialId, editable
     setPieces('1');
   };
 
+  const round4 = (n: number) => Math.round(n * 10000) / 10000;
+
   const recompute = (l: string, w: string, h: string, n: string) => {
     const nl = Number(l), nw = Number(w), nh = Number(h), np = Number(n);
     if (!nw || !nh || !np || nw <= 0 || nh <= 0 || np <= 0) return;
     if (calcMode === 'm3') {
       if (!nl || nl <= 0) return;
-      setQty(String((nl * nw * nh / MM3_PER_M3) * np));
+      setQty(String(round4((nl * nw * nh / MM3_PER_M3) * np)));
     } else if (calcMode === 'sqft') {
-      setQty(String((nw * nh / MM2_PER_SQFT) * np));
+      setQty(String(round4((nw * nh / MM2_PER_SQFT) * np)));
     }
   };
 
