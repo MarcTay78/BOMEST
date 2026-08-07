@@ -150,6 +150,7 @@ export function Materials() {
       unit: m.unit,
       currentPrice,
       isComposite: false,
+      isEstimate: m.isEstimate,
     });
     await reload();
     startEdit(copy);
@@ -397,7 +398,7 @@ function AddMaterialForm({ materials, onDone, onCancel }: { materials: Material[
     if (isComposite) {
       if (recipeRows.length === 0) return;
       const material = await dataStore.createMaterial({
-        name: name.trim(), category, item, type, size: size.trim(), unit: unit.trim(), currentPrice: 0, isComposite: true,
+        name: name.trim(), category, item, type, size: size.trim(), unit: unit.trim(), currentPrice: 0, isComposite: true, isEstimate: false,
       });
       for (const row of recipeRows) {
         await dataStore.addMaterialComponent(material.id, row.componentMaterialId, Number(row.quantity));
@@ -405,7 +406,7 @@ function AddMaterialForm({ materials, onDone, onCancel }: { materials: Material[
     } else {
       const currentPrice = Number(price);
       if (Number.isNaN(currentPrice) || currentPrice < 0) return;
-      await dataStore.createMaterial({ name: name.trim(), category, item, type, size: size.trim(), unit: unit.trim(), currentPrice, isComposite: false });
+      await dataStore.createMaterial({ name: name.trim(), category, item, type, size: size.trim(), unit: unit.trim(), currentPrice, isComposite: false, isEstimate: false });
     }
     onDone();
   };

@@ -3,10 +3,10 @@ import { computeCategoryBreakdown, computeEffectivePrice, computeEffectiveUnit, 
 import type { BomLine, Material, MaterialComponent } from './types';
 
 const materials: Material[] = [
-  { id: 'm1', name: 'Oak Lumber', category: 'Wood', item: 'Lumber', type: 'S4S', size: '', unit: 'm3', currentPrice: 850, isComposite: false, updatedAt: '' },
-  { id: 'm2', name: 'Steel Bracket', category: 'Hardware', item: 'Bracket', type: '', size: '', unit: 'pcs', currentPrice: 2.1, isComposite: false, updatedAt: '' },
-  { id: 'm3', name: 'Danish Oil Finish', category: 'Finish', item: 'Oil', type: '', size: '', unit: 'L', currentPrice: 18.5, isComposite: false, updatedAt: '' },
-  { id: 'm4', name: 'Box', category: 'Packaging', item: 'Box', type: '', size: '', unit: 'pcs', currentPrice: 4.2, isComposite: false, updatedAt: '' },
+  { id: 'm1', name: 'Oak Lumber', category: 'Wood', item: 'Lumber', type: 'S4S', size: '', unit: 'm3', currentPrice: 850, isComposite: false, isEstimate: false, updatedAt: '' },
+  { id: 'm2', name: 'Steel Bracket', category: 'Hardware', item: 'Bracket', type: '', size: '', unit: 'pcs', currentPrice: 2.1, isComposite: false, isEstimate: false, updatedAt: '' },
+  { id: 'm3', name: 'Danish Oil Finish', category: 'Finish', item: 'Oil', type: '', size: '', unit: 'L', currentPrice: 18.5, isComposite: false, isEstimate: false, updatedAt: '' },
+  { id: 'm4', name: 'Box', category: 'Packaging', item: 'Box', type: '', size: '', unit: 'pcs', currentPrice: 4.2, isComposite: false, isEstimate: false, updatedAt: '' },
 ];
 const materialsById = new Map(materials.map((m) => [m.id, m]));
 
@@ -177,7 +177,7 @@ describe('computeEffectiveUnit', () => {
 describe('computeProductCost with m3-to-pcs conversion', () => {
   it('uses the computed $/pc rate, not the raw m3 rate, for the line total', () => {
     const convertible = new Map([
-      ['m9', { id: 'm9', name: 'Chair Leg', category: 'Wood', item: 'Leg', type: 'S4S', size: '24x590x915', unit: 'm3', currentPrice: 850, isComposite: false, updatedAt: '' }],
+      ['m9', { id: 'm9', name: 'Chair Leg', category: 'Wood', item: 'Leg', type: 'S4S', size: '24x590x915', unit: 'm3', currentPrice: 850, isComposite: false, isEstimate: false, updatedAt: '' }],
     ]);
     const bomLines: BomLine[] = [{ id: 'b1', productId: 'p1', materialId: 'm9', quantity: 4, remarks: '' }];
     const cost = computeProductCost({ laborCost: 0 }, bomLines, convertible);
@@ -203,7 +203,7 @@ describe('computeEffectivePrice', () => {
   });
 
   it('sums quantity * component effective price for a composite material', () => {
-    const pack: Material = { id: 'pack', name: 'Hardware Pack', category: 'Hardware', item: '', type: '', size: '', unit: 'pcs', currentPrice: 0, isComposite: true, updatedAt: '' };
+    const pack: Material = { id: 'pack', name: 'Hardware Pack', category: 'Hardware', item: '', type: '', size: '', unit: 'pcs', currentPrice: 0, isComposite: true, isEstimate: false, updatedAt: '' };
     const withPack = new Map(materialsById);
     withPack.set('pack', pack);
     const components: MaterialComponent[] = [
@@ -216,7 +216,7 @@ describe('computeEffectivePrice', () => {
   });
 
   it('skips a component whose material no longer exists, without throwing', () => {
-    const pack: Material = { id: 'pack', name: 'Hardware Pack', category: 'Hardware', item: '', type: '', size: '', unit: 'pcs', currentPrice: 0, isComposite: true, updatedAt: '' };
+    const pack: Material = { id: 'pack', name: 'Hardware Pack', category: 'Hardware', item: '', type: '', size: '', unit: 'pcs', currentPrice: 0, isComposite: true, isEstimate: false, updatedAt: '' };
     const withPack = new Map(materialsById);
     withPack.set('pack', pack);
     const components: MaterialComponent[] = [
