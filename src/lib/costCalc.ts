@@ -34,7 +34,7 @@ export function parseSizeMm2(size: string): [number, number] | null {
 export interface EffectiveUnit {
   price: number;
   unit: string;
-  /** True when this price was derived from an m3 rate + parsed Size, rather than taken as-is. */
+  /** True when this price was derived from an m3 or sqft rate + parsed Size, rather than taken as-is. */
   converted: boolean;
 }
 
@@ -82,7 +82,7 @@ export function computeEffectivePrice(
 }
 
 /** product.total_cost = SUM(bom_lines.quantity * materials.current_price) + product.labor_cost
- *  (materials priced per m3 with a parseable Size use the computed $/pc rate — see computeEffectiveUnit) */
+ *  (materials priced per m3 or sqft with a parseable Size use the computed $/pc rate — see computeEffectiveUnit) */
 export function computeProductCost(
   product: Pick<Product, 'laborCost'>,
   bomLines: BomLine[],

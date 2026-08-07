@@ -504,7 +504,7 @@ Expected: PASS
 Run: `npm run dev`, open the Materials page:
 1. Add a new non-composite material, check "Estimate only", submit — confirm the "Estimate" tag appears next to its name in the table.
 2. Edit that material inline — confirm the checkbox shows checked, uncheck it, Save — confirm the tag disappears.
-3. Add a material with unit `sqft` and size `1220x2440` and price `2` — confirm the displayed price is `$64.08 / pcs` (per Task 1's conversion), not `$2.00 / sqft`.
+3. Add a material with unit `sqft` and size `1220x2440` and price `2` — the Materials page shows the raw `$2.00 / sqft` (it always displays a non-composite material's raw price/unit, same as an m3 material). The $/pc conversion applies where `computeEffectivePrice`/`computeEffectiveUnit` is actually called: add this material to a product's BOM or a composite's recipe and confirm the line cost uses `$64.08` (the converted $/pc rate), not `$2 * quantity`.
 4. Duplicate an existing Estimate-flagged material — confirm the copy also shows the "Estimate" tag.
 
 - [ ] **Step 7: Commit**

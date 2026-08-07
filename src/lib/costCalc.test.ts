@@ -67,6 +67,15 @@ describe('computeProductCost', () => {
     const cost = computeProductCost({ laborCost: 0 }, [{ id: 'b1', productId: 'p1', materialId: 'm1', quantity: 1, remarks: '' }], uncategorized);
     expect(cost.categoryTotals).toEqual([{ category: 'Uncategorized', total: 850 }]);
   });
+
+  it('isEstimate never changes the total — it is a display flag only', () => {
+    const bomLines: BomLine[] = [{ id: 'b1', productId: 'p1', materialId: 'm1', quantity: 1, remarks: '' }];
+    const notEstimated = computeProductCost({ laborCost: 0 }, bomLines, materialsById);
+    const estimated = new Map(materialsById);
+    estimated.set('m1', { ...materials[0], isEstimate: true });
+    const withEstimateFlag = computeProductCost({ laborCost: 0 }, bomLines, estimated);
+    expect(withEstimateFlag).toEqual(notEstimated);
+  });
 });
 
 describe('computeCategoryBreakdown', () => {
