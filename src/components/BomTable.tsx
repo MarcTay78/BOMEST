@@ -95,7 +95,7 @@ export function BomTable({ bomLines, materials, componentsByMaterialId, editable
                   {formatCurrency(effective.price)}
                   {material.isEstimate && <span className="tag tag-neutral" style={{ marginLeft: 6 }}>Estimate</span>}
                 </td>
-                <td>{line.quantity}</td>
+                <td>{Number(line.quantity.toFixed(4))}</td>
                 <td className="text-muted">{effective.unit}</td>
                 <td style={{ textAlign: 'right' }}>{formatCurrency(line.quantity * effective.price)}</td>
                 <td>
