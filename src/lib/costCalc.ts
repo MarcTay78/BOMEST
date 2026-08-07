@@ -15,12 +15,20 @@ export interface ProductCost {
 }
 
 const MM3_PER_M3 = 1_000_000_000;
+const MM2_PER_SQFT = 92903.04;
 
 /** "24x590x915" (mm) -> [24, 590, 915]. Null if not exactly 3 positive numbers. */
 export function parseSizeMm(size: string): [number, number, number] | null {
   const parts = size.split(/x/i).map((s) => Number(s.trim()));
   if (parts.length !== 3 || parts.some((n) => !Number.isFinite(n) || n <= 0)) return null;
   return parts as [number, number, number];
+}
+
+/** "1220x2440" (mm) -> [1220, 2440]. Null if not exactly 2 positive numbers. */
+export function parseSizeMm2(size: string): [number, number] | null {
+  const parts = size.split(/x/i).map((s) => Number(s.trim()));
+  if (parts.length !== 2 || parts.some((n) => !Number.isFinite(n) || n <= 0)) return null;
+  return parts as [number, number];
 }
 
 export interface EffectiveUnit {
@@ -30,14 +38,26 @@ export interface EffectiveUnit {
   converted: boolean;
 }
 
-/** A material priced per m3 with a parseable WxHxL Size auto-converts to a $/pc rate. */
+/** A material priced per m3 or sqft with a parseable Size auto-converts to a $/pc rate. */
 export function computeEffectiveUnit(material: Pick<Material, 'unit' | 'size' | 'currentPrice'>): EffectiveUnit {
-  const isVolumePriced = material.unit.trim().toLowerCase() === 'm3';
-  const dims = isVolumePriced ? parseSizeMm(material.size) : null;
-  if (!dims) return { price: material.currentPrice, unit: material.unit, converted: false };
-  const [a, b, c] = dims;
-  const volumeM3 = (a * b * c) / MM3_PER_M3;
-  return { price: volumeM3 * material.currentPrice, unit: 'pcs', converted: true };
+  const unit = material.unit.trim().toLowerCase();
+  if (unit === 'm3') {
+    const dims = parseSizeMm(material.size);
+    if (dims) {
+      const [a, b, c] = dims;
+      const volumeM3 = (a * b * c) / MM3_PER_M3;
+      return { price: volumeM3 * material.currentPrice, unit: 'pcs', converted: true };
+    }
+  }
+  if (unit === 'sqft') {
+    const dims = parseSizeMm2(material.size);
+    if (dims) {
+      const [w, h] = dims;
+      const areaSqft = (w * h) / MM2_PER_SQFT;
+      return { price: areaSqft * material.currentPrice, unit: 'pcs', converted: true };
+    }
+  }
+  return { price: material.currentPrice, unit: material.unit, converted: false };
 }
 
 /** A composite material's price is the live sum of quantity * component effective price

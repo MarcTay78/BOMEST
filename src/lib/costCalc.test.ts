@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeCategoryBreakdown, computeEffectivePrice, computeEffectiveUnit, computeProductCost, formatCurrency, parseSizeMm } from './costCalc';
+import { computeCategoryBreakdown, computeEffectivePrice, computeEffectiveUnit, computeProductCost, formatCurrency, parseSizeMm, parseSizeMm2 } from './costCalc';
 import type { BomLine, Material, MaterialComponent } from './types';
 
 const materials: Material[] = [
@@ -101,6 +101,24 @@ describe('parseSizeMm', () => {
   });
 });
 
+describe('parseSizeMm2', () => {
+  it('parses "AxB" into 2 numbers', () => {
+    expect(parseSizeMm2('1220x2440')).toEqual([1220, 2440]);
+  });
+
+  it('is case-insensitive and tolerates spaces', () => {
+    expect(parseSizeMm2('1220 X 2440')).toEqual([1220, 2440]);
+  });
+
+  it('rejects anything that is not exactly 2 positive numbers', () => {
+    expect(parseSizeMm2('')).toBeNull();
+    expect(parseSizeMm2('1220')).toBeNull();
+    expect(parseSizeMm2('1220x2440x10')).toBeNull();
+    expect(parseSizeMm2('1220x0')).toBeNull();
+    expect(parseSizeMm2('large')).toBeNull();
+  });
+});
+
 describe('computeEffectiveUnit', () => {
   it('converts an m3-priced material with a parseable size to a $/pc rate', () => {
     const material = { unit: 'm3', size: '24x590x915', currentPrice: 850 };
@@ -126,6 +144,33 @@ describe('computeEffectiveUnit', () => {
   it('unit match is case-insensitive', () => {
     const material = { unit: 'M3', size: '100x100x1000', currentPrice: 1000 };
     expect(computeEffectiveUnit(material).converted).toBe(true);
+  });
+
+  it('converts a sqft-priced material with a parseable 2-dim size to a $/pc rate', () => {
+    const material = { unit: 'sqft', size: '1220x2440', currentPrice: 2 };
+    const effective = computeEffectiveUnit(material);
+    const MM2_PER_SQFT = 92903.04;
+    const expectedSqft = (1220 * 2440) / MM2_PER_SQFT;
+    expect(effective.converted).toBe(true);
+    expect(effective.unit).toBe('pcs');
+    expect(effective.price).toBeCloseTo(expectedSqft * 2);
+  });
+
+  it('leaves a sqft material with no parseable size untouched', () => {
+    const material = { unit: 'sqft', size: '', currentPrice: 2 };
+    const effective = computeEffectiveUnit(material);
+    expect(effective).toEqual({ price: 2, unit: 'sqft', converted: false });
+  });
+
+  it('sqft unit match is case-insensitive', () => {
+    const material = { unit: 'SqFt', size: '1220x2440', currentPrice: 2 };
+    expect(computeEffectiveUnit(material).converted).toBe(true);
+  });
+
+  it('a 3-dim size on a sqft material does not convert (wrong dimension count)', () => {
+    const material = { unit: 'sqft', size: '24x590x915', currentPrice: 2 };
+    const effective = computeEffectiveUnit(material);
+    expect(effective).toEqual({ price: 2, unit: 'sqft', converted: false });
   });
 });
 
