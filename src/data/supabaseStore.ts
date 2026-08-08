@@ -20,7 +20,6 @@ const toMaterial = (row: any): Material => ({
   unit: row.unit,
   currentPrice: Number(row.current_price),
   isComposite: row.is_composite,
-  isEstimate: row.is_estimate,
   updatedAt: row.updated_at,
 });
 
@@ -110,7 +109,6 @@ export const supabaseStore: DataStore = {
         unit: input.unit,
         current_price: input.currentPrice,
         is_composite: input.isComposite,
-        is_estimate: input.isEstimate,
       })
       .select()
       .single();
@@ -142,7 +140,6 @@ export const supabaseStore: DataStore = {
     if (patch.type !== undefined) dbPatch.type = patch.type;
     if (patch.size !== undefined) dbPatch.size = patch.size;
     if (patch.unit !== undefined) dbPatch.unit = patch.unit;
-    if (patch.isEstimate !== undefined) dbPatch.is_estimate = patch.isEstimate;
     const { data, error } = await requireClient().from('materials').update(dbPatch).eq('id', id).select().single();
     if (error) throw error;
     return toMaterial(data);

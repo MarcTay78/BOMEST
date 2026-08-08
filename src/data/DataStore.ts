@@ -9,7 +9,7 @@ export interface DataStore {
   createMaterial(input: Omit<Material, 'id' | 'updatedAt'>): Promise<Material>;
   /** Logs the pre-edit price to history, then applies newPrice. */
   updateMaterialPrice(id: string, newPrice: number): Promise<Material>;
-  updateMaterial(id: string, patch: Partial<Pick<Material, 'name' | 'category' | 'item' | 'type' | 'size' | 'unit' | 'isEstimate'>>): Promise<Material>;
+  updateMaterial(id: string, patch: Partial<Pick<Material, 'name' | 'category' | 'item' | 'type' | 'size' | 'unit'>>): Promise<Material>;
   /** Throws DeleteBlockedError if referenced by any bom_lines or material_components row. */
   deleteMaterial(id: string): Promise<void>;
   getPriceHistory(materialId: string): Promise<PriceHistoryPoint[]>;

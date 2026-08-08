@@ -93,7 +93,6 @@ export function BomTable({ bomLines, materials, componentsByMaterialId, editable
                 <td>{material.size || '—'}</td>
                 <td style={{ textAlign: 'right' }} title={effective.converted ? `${formatUnitPrice(material.currentPrice)} / m3` : undefined}>
                   {formatUnitPrice(effective.price)}
-                  {material.isEstimate && <span className="tag tag-neutral" style={{ marginLeft: 6 }}>Estimate</span>}
                 </td>
                 <td>{Number(line.quantity.toFixed(4))}</td>
                 <td className="text-muted">{effective.unit}</td>
@@ -135,7 +134,6 @@ export function BomTable({ bomLines, materials, componentsByMaterialId, editable
             </td>
             <td style={{ textAlign: 'right' }} className="text-muted">
               {selectedEffective ? formatUnitPrice(selectedEffective.price) : '—'}
-              {selectedMaterial?.isEstimate && <span className="tag tag-neutral" style={{ marginLeft: 6 }}>Estimate</span>}
             </td>
             <td>
               <input className="input" style={{ minHeight: 32 }} placeholder="qty" value={qty} onChange={(e) => setQty(e.target.value)} />

@@ -14,7 +14,6 @@ interface Draft {
   size: string;
   unit: string;
   price: string;
-  isEstimate: boolean;
 }
 
 const draftFrom = (m: Material): Draft => ({
@@ -25,7 +24,6 @@ const draftFrom = (m: Material): Draft => ({
   size: m.size,
   unit: m.unit,
   price: String(m.currentPrice),
-  isEstimate: m.isEstimate,
 });
 
 type SortKey = 'name' | 'category' | 'item' | 'type' | 'size';
@@ -114,7 +112,6 @@ export function Materials() {
         type: draft.type,
         size: draft.size,
         unit: draft.unit,
-        isEstimate: draft.isEstimate,
       });
       setEditingId(null);
       setDraft(null);
@@ -161,7 +158,6 @@ export function Materials() {
       unit: m.unit,
       currentPrice,
       isComposite: false,
-      isEstimate: m.isEstimate,
     });
     await reload();
     startEdit(copy);
@@ -222,10 +218,6 @@ export function Materials() {
                       <td><input className="input" style={{ minHeight: 30, width: 100 }} value={draft.size} onChange={(e) => setDraft({ ...draft, size: e.target.value })} /></td>
                       <td>
                         <input className="input" style={{ minHeight: 30, width: 70 }} value={draft.unit} onChange={(e) => setDraft({ ...draft, unit: e.target.value })} />
-                        <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, marginTop: 4, whiteSpace: 'nowrap' }}>
-                          <input type="checkbox" checked={draft.isEstimate} onChange={(e) => setDraft({ ...draft, isEstimate: e.target.checked })} />
-                          Estimate
-                        </label>
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         {m.isComposite ? (
@@ -249,7 +241,6 @@ export function Materials() {
                       <td>
                         {m.name}
                         {m.isComposite && <span className="tag tag-accent" style={{ marginLeft: 6 }}>Composite</span>}
-                        {m.isEstimate && <span className="tag tag-neutral" style={{ marginLeft: 6 }}>Estimate</span>}
                       </td>
                       <td>{m.category ? <span className="tag tag-neutral">{m.category}</span> : <span className="text-muted">—</span>}</td>
                       <td className="text-muted">{m.item || '—'}</td>
@@ -391,7 +382,6 @@ function AddMaterialForm({ materials, onDone, onCancel }: { materials: Material[
   const [unit, setUnit] = useState('');
   const [price, setPrice] = useState('');
   const [isComposite, setIsComposite] = useState(false);
-  const [isEstimate, setIsEstimate] = useState(false);
   const [recipeRows, setRecipeRows] = useState<{ componentMaterialId: string; quantity: string }[]>([]);
   const [recipeMaterialId, setRecipeMaterialId] = useState('');
   const [recipeQty, setRecipeQty] = useState('');
@@ -417,7 +407,7 @@ function AddMaterialForm({ materials, onDone, onCancel }: { materials: Material[
     if (isComposite) {
       if (recipeRows.length === 0) return;
       const material = await dataStore.createMaterial({
-        name: name.trim(), category, item, type, size: size.trim(), unit: unit.trim(), currentPrice: 0, isComposite: true, isEstimate,
+        name: name.trim(), category, item, type, size: size.trim(), unit: unit.trim(), currentPrice: 0, isComposite: true,
       });
       for (const row of recipeRows) {
         await dataStore.addMaterialComponent(material.id, row.componentMaterialId, Number(row.quantity));
@@ -425,7 +415,7 @@ function AddMaterialForm({ materials, onDone, onCancel }: { materials: Material[
     } else {
       const currentPrice = Number(price);
       if (Number.isNaN(currentPrice) || currentPrice < 0) return;
-      await dataStore.createMaterial({ name: name.trim(), category, item, type, size: size.trim(), unit: unit.trim(), currentPrice, isComposite: false, isEstimate });
+      await dataStore.createMaterial({ name: name.trim(), category, item, type, size: size.trim(), unit: unit.trim(), currentPrice, isComposite: false });
     }
     onDone();
   };
@@ -450,10 +440,6 @@ function AddMaterialForm({ materials, onDone, onCancel }: { materials: Material[
       <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
         <input type="checkbox" checked={isComposite} onChange={(e) => setIsComposite(e.target.checked)} />
         Composite
-      </label>
-      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
-        <input type="checkbox" checked={isEstimate} onChange={(e) => setIsEstimate(e.target.checked)} />
-        Estimate only (no real cost tracking)
       </label>
       {isComposite ? (
         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>

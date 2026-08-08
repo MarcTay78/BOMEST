@@ -17,6 +17,7 @@ export function ProductList() {
   const [sort, setSort] = useState<SortKey>('name');
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('All');
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -51,13 +52,15 @@ export function ProductList() {
   );
 
   const rows = useMemo(() => {
-    const filtered = activeCategory === 'All' ? products : products.filter((p) => p.category === activeCategory);
+    const categoryFiltered = activeCategory === 'All' ? products : products.filter((p) => p.category === activeCategory);
+    const q = query.trim().toLowerCase();
+    const filtered = q ? categoryFiltered.filter((p) => p.name.toLowerCase().includes(q)) : categoryFiltered;
     const withCost = filtered.map((p) => ({
       product: p,
       cost: computeProductCost(p, bomLinesByProduct[p.id] ?? [], materialsById, componentsByMaterialId),
     }));
     return withCost.sort((a, b) => (sort === 'cost' ? b.cost.total - a.cost.total : a.product.name.localeCompare(b.product.name)));
-  }, [products, bomLinesByProduct, materialsById, componentsByMaterialId, sort, activeCategory]);
+  }, [products, bomLinesByProduct, materialsById, componentsByMaterialId, sort, activeCategory, query]);
 
   if (loading) return null;
 
@@ -69,6 +72,13 @@ export function ProductList() {
           <p className="text-muted" style={{ margin: 0, fontSize: 13 }}>{products.length} in the catalog · cost calculated live</p>
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <input
+            className="input"
+            style={{ minHeight: 32, width: 200 }}
+            placeholder="Search products…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
           <div className="seg">
             <label className="seg-opt">
               <input type="radio" name="sort" checked={sort === 'cost'} onChange={() => setSort('cost')} />Cost ↓
