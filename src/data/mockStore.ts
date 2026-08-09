@@ -11,14 +11,14 @@ const MOCK_USERS: Record<string, { password: string; role: Session['role'] }> = 
 const SESSION_KEY = 'bomest_mock_session';
 
 let materials: Material[] = [
-  { id: 'm1', name: 'Oak Lumber', category: 'Wood', item: 'Lumber', type: 'S4S', size: '', unit: 'm3', currentPrice: 850, isComposite: false, updatedAt: '2026-07-12' },
-  { id: 'm2', name: 'Walnut Lumber', category: 'Wood', item: 'Lumber', type: 'S4S', size: '', unit: 'm3', currentPrice: 1450, isComposite: false, updatedAt: '2026-07-12' },
-  { id: 'm3', name: 'Maple Lumber', category: 'Wood', item: 'Lumber', type: 'RBW', size: '', unit: 'm3', currentPrice: 980, isComposite: false, updatedAt: '2026-06-28' },
-  { id: 'm4', name: 'Steel Bracket', category: 'Hardware', item: 'Bracket', type: '', size: '', unit: 'pcs', currentPrice: 2.1, isComposite: false, updatedAt: '2026-07-03' },
-  { id: 'm5', name: 'Wood Screw 40mm', category: 'Hardware', item: 'Screw', type: '', size: '40mm', unit: 'pcs', currentPrice: 0.08, isComposite: false, updatedAt: '2026-07-03' },
-  { id: 'm6', name: 'Danish Oil Finish', category: 'Finish', item: 'Oil', type: '', size: '', unit: 'L', currentPrice: 18.5, isComposite: false, updatedAt: '2026-05-20' },
-  { id: 'm7', name: 'Felt Pads', category: 'Packaging', item: 'Pads', type: '', size: '', unit: 'pcs', currentPrice: 0.35, isComposite: false, updatedAt: '2026-06-02' },
-  { id: 'm8', name: 'Corrugated Box — Large', category: 'Packaging', item: 'Box', type: '', size: 'Large', unit: 'pcs', currentPrice: 4.2, isComposite: false, updatedAt: '2026-06-02' },
+  { id: 'm1', name: 'Oak Lumber', category: 'Wood', item: 'Lumber', type: 'S4S', size: '', unit: 'm3', currentPrice: 850, isComposite: false, isEstimate: false, updatedAt: '2026-07-12' },
+  { id: 'm2', name: 'Walnut Lumber', category: 'Wood', item: 'Lumber', type: 'S4S', size: '', unit: 'm3', currentPrice: 1450, isComposite: false, isEstimate: false, updatedAt: '2026-07-12' },
+  { id: 'm3', name: 'Maple Lumber', category: 'Wood', item: 'Lumber', type: 'RBW', size: '', unit: 'm3', currentPrice: 980, isComposite: false, isEstimate: false, updatedAt: '2026-06-28' },
+  { id: 'm4', name: 'Steel Bracket', category: 'Hardware', item: 'Bracket', type: '', size: '', unit: 'pcs', currentPrice: 2.1, isComposite: false, isEstimate: false, updatedAt: '2026-07-03' },
+  { id: 'm5', name: 'Wood Screw 40mm', category: 'Hardware', item: 'Screw', type: '', size: '40mm', unit: 'pcs', currentPrice: 0.08, isComposite: false, isEstimate: false, updatedAt: '2026-07-03' },
+  { id: 'm6', name: 'Danish Oil Finish', category: 'Finish', item: 'Oil', type: '', size: '', unit: 'L', currentPrice: 18.5, isComposite: false, isEstimate: false, updatedAt: '2026-05-20' },
+  { id: 'm7', name: 'Felt Pads', category: 'Packaging', item: 'Pads', type: '', size: '', unit: 'pcs', currentPrice: 0.35, isComposite: false, isEstimate: false, updatedAt: '2026-06-02' },
+  { id: 'm8', name: 'Corrugated Box — Large', category: 'Packaging', item: 'Box', type: '', size: 'Large', unit: 'pcs', currentPrice: 4.2, isComposite: false, isEstimate: true, updatedAt: '2026-06-02' },
 ];
 
 let priceHistory: PriceHistoryPoint[] = [

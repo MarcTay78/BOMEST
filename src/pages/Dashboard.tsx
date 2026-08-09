@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { buildCategoryColorMap, CostRankingChart, type RankingRow } from '../components/charts/CostRankingChart';
 import { PriceTrendChart, type TrendPoint } from '../components/charts/PriceTrendChart';
 import { dataStore } from '../data';
-import { computeEffectivePrice, computeProductCost, formatUnitPrice } from '../lib/costCalc';
+import { computeCategoryBreakdown, computeEffectivePrice, computeProductCost, formatCurrency, formatUnitPrice } from '../lib/costCalc';
 import type { BomLine, Material, MaterialComponent, Product } from '../lib/types';
 
 export function Dashboard() {
@@ -14,6 +14,7 @@ export function Dashboard() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [selectedMaterialId, setSelectedMaterialId] = useState('');
   const [trendPoints, setTrendPoints] = useState<TrendPoint[]>([]);
+  const [compareIds, setCompareIds] = useState<string[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -60,6 +61,29 @@ export function Dashboard() {
     const colorMap = buildCategoryColorMap(rankingRows.map((r) => r.category));
     return Object.entries(colorMap);
   }, [rankingRows]);
+
+  const toggleCompare = (id: string) => {
+    setCompareIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
+  const compareProducts = useMemo(() => products.filter((p) => compareIds.includes(p.id)), [products, compareIds]);
+
+  const compareRows = useMemo(() => {
+    const perProduct = compareProducts.map((p) => {
+      const cost = computeProductCost(p, bomLinesByProduct[p.id] ?? [], materialsById, componentsByMaterialId);
+      const breakdown = new Map(computeCategoryBreakdown(cost).map((r) => [r.key, r.value]));
+      return { product: p, cost, breakdown };
+    });
+    const keys: string[] = [];
+    const labels = new Map<string, string>();
+    for (const { breakdown } of perProduct) {
+      for (const key of breakdown.keys()) {
+        if (!keys.includes(key)) keys.push(key);
+      }
+    }
+    for (const key of keys) labels.set(key, key === 'labor' ? 'Overhead' : key);
+    return { perProduct, keys, labels };
+  }, [compareProducts, bomLinesByProduct, materialsById, componentsByMaterialId]);
 
   useEffect(() => {
     if (!selectedMaterialId) {
@@ -124,6 +148,57 @@ export function Dashboard() {
             );
           })()}
         </div>
+      </div>
+
+      <div className="card elev-sm" style={{ padding: 22, marginTop: 22 }}>
+        <div className="card-title">Cost breakdown comparison</div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
+          {products.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              className="btn btn-ghost"
+              style={compareIds.includes(p.id) ? { background: 'var(--color-accent-700)', color: 'var(--color-on-accent, #fff)' } : undefined}
+              onClick={() => toggleCompare(p.id)}
+            >
+              {p.name}
+            </button>
+          ))}
+        </div>
+        {compareRows.perProduct.length === 0 ? (
+          <p className="text-muted" style={{ marginTop: 14 }}>Pick two or more products to compare.</p>
+        ) : (
+          <div style={{ overflowX: 'auto', marginTop: 16 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: 'left', padding: '6px 10px' }}></th>
+                  {compareRows.perProduct.map(({ product }) => (
+                    <th key={product.id} style={{ textAlign: 'right', padding: '6px 10px' }}>{product.name}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {compareRows.keys.map((key) => (
+                  <tr key={key} style={{ borderBottom: '1px solid var(--color-divider)' }}>
+                    <td className="text-muted" style={{ padding: '6px 10px' }}>{compareRows.labels.get(key)}</td>
+                    {compareRows.perProduct.map(({ product, breakdown }) => (
+                      <td key={product.id} style={{ textAlign: 'right', padding: '6px 10px' }}>{formatCurrency(breakdown.get(key) ?? 0)}</td>
+                    ))}
+                  </tr>
+                ))}
+                <tr>
+                  <td style={{ padding: '6px 10px', fontFamily: 'var(--font-heading)' }}>Grand total</td>
+                  {compareRows.perProduct.map(({ product, cost }) => (
+                    <td key={product.id} style={{ textAlign: 'right', padding: '6px 10px', fontFamily: 'var(--font-heading)', color: 'var(--color-accent-700)' }}>
+                      {formatCurrency(cost.total)}
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

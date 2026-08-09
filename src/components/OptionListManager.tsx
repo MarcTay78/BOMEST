@@ -54,7 +54,8 @@ export function OptionListManager({ kind, label }: Props) {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, name: string) => {
+    if (!window.confirm(`Delete "${name}"? This can't be undone.`)) return;
     setError(null);
     try {
       await dataStore.deleteOption(kind, id);
@@ -90,7 +91,7 @@ export function OptionListManager({ kind, label }: Props) {
                 <button type="button" className="btn btn-ghost btn-icon" aria-label={`Rename ${option.name}`} onClick={() => startEdit(option)}>
                   <EditIcon />
                 </button>
-                <button type="button" className="btn btn-ghost btn-icon" aria-label={`Delete ${option.name}`} onClick={() => handleDelete(option.id)}>
+                <button type="button" className="btn btn-ghost btn-icon" aria-label={`Delete ${option.name}`} onClick={() => handleDelete(option.id, option.name)}>
                   <TrashIcon />
                 </button>
               </>

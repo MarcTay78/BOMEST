@@ -14,6 +14,7 @@ export interface Material {
   unit: string;
   currentPrice: number;
   isComposite: boolean;
+  isEstimate: boolean;
   updatedAt: string;
 }
 

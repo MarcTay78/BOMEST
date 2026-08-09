@@ -5,6 +5,7 @@ import { OptionSelect } from '../components/OptionSelect';
 import { DeleteBlockedError, dataStore } from '../data';
 import { computeEffectivePrice, formatCurrency, formatDate, formatUnitPrice } from '../lib/costCalc';
 import type { Material, MaterialComponent } from '../lib/types';
+import { useCssVarHeight } from '../lib/useCssVarHeight';
 
 interface Draft {
   name: string;
@@ -14,6 +15,7 @@ interface Draft {
   size: string;
   unit: string;
   price: string;
+  isEstimate: boolean;
 }
 
 const draftFrom = (m: Material): Draft => ({
@@ -24,6 +26,7 @@ const draftFrom = (m: Material): Draft => ({
   size: m.size,
   unit: m.unit,
   price: String(m.currentPrice),
+  isEstimate: m.isEstimate,
 });
 
 type SortKey = 'name' | 'category' | 'item' | 'type' | 'size';
@@ -39,7 +42,10 @@ export function Materials() {
   const [sortKey, setSortKey] = useState<SortKey | null>('name');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [activeCategory, setActiveCategory] = useState('All');
+  const [compositeOnly, setCompositeOnly] = useState(false);
+  const [estimateOnly, setEstimateOnly] = useState(false);
   const [recipeOpenId, setRecipeOpenId] = useState<string | null>(null);
+  const filterBarRef = useCssVarHeight<HTMLDivElement>('--materials-filter-h');
 
   const reload = () =>
     Promise.all([dataStore.listMaterials(), dataStore.listMaterialComponents()]).then(([mats, components]) => {
@@ -76,8 +82,12 @@ export function Materials() {
   );
 
   const categoryFiltered = useMemo(
-    () => (activeCategory === 'All' ? materials : materials.filter((m) => m.category === activeCategory)),
-    [materials, activeCategory],
+    () =>
+      materials
+        .filter((m) => activeCategory === 'All' || m.category === activeCategory)
+        .filter((m) => !compositeOnly || m.isComposite)
+        .filter((m) => !estimateOnly || m.isEstimate),
+    [materials, activeCategory, compositeOnly, estimateOnly],
   );
 
   const sortedMaterials = useMemo(() => {
@@ -112,6 +122,7 @@ export function Materials() {
         type: draft.type,
         size: draft.size,
         unit: draft.unit,
+        isEstimate: draft.isEstimate,
       });
       setEditingId(null);
       setDraft(null);
@@ -121,7 +132,8 @@ export function Materials() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, name: string) => {
+    if (!window.confirm(`Delete "${name}"? This can't be undone.`)) return;
     setBlockedMessage(null);
     try {
       await dataStore.deleteMaterial(id);
@@ -158,6 +170,7 @@ export function Materials() {
       unit: m.unit,
       currentPrice,
       isComposite: false,
+      isEstimate: m.isEstimate,
     });
     await reload();
     startEdit(copy);
@@ -176,7 +189,7 @@ export function Materials() {
 
       {adding && <AddMaterialForm materials={materials} onDone={async () => { setAdding(false); await reload(); }} onCancel={() => setAdding(false)} />}
 
-      <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
+      <div ref={filterBarRef} className="sticky-filter-bar" style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
         {['All', ...categories].map((cat) => (
           <button
             key={cat}
@@ -187,10 +200,25 @@ export function Materials() {
             {cat}
           </button>
         ))}
+        <span className="hr" style={{ width: 1, height: 24, margin: '0 2px' }} />
+        <button
+          type="button"
+          className={compositeOnly ? 'btn btn-primary' : 'btn btn-secondary'}
+          onClick={() => setCompositeOnly(!compositeOnly)}
+        >
+          Composite
+        </button>
+        <button
+          type="button"
+          className={estimateOnly ? 'btn btn-primary' : 'btn btn-secondary'}
+          onClick={() => setEstimateOnly(!estimateOnly)}
+        >
+          Estimate
+        </button>
       </div>
 
       <div>
-        <table className="table">
+        <table className="table table-sticky-head">
           <thead>
             <tr>
               <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort('name')}>Name{sortIndicator('name')}</th>
@@ -211,7 +239,7 @@ export function Materials() {
                 <tr>
                   {editing ? (
                     <>
-                      <td><input className="input" style={{ minHeight: 30, width: 140 }} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></td>
+                      <td><input className="input" style={{ minHeight: 30, width: 320 }} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></td>
                       <td><OptionSelect kind="material_categories" value={draft.category} onChange={(v) => setDraft({ ...draft, category: v })} style={{ minHeight: 30 }} /></td>
                       <td><OptionSelect kind="material_items" value={draft.item} onChange={(v) => setDraft({ ...draft, item: v })} style={{ minHeight: 30 }} /></td>
                       <td><OptionSelect kind="material_types" value={draft.type} onChange={(v) => setDraft({ ...draft, type: v })} style={{ minHeight: 30 }} /></td>
@@ -232,7 +260,11 @@ export function Materials() {
                         )}
                       </td>
                       <td className="text-muted">{formatDate(m.updatedAt)}</td>
-                      <td style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                      <td style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }} title="Price is a rough estimate, not a tracked cost">
+                          <input type="checkbox" checked={draft.isEstimate} onChange={(e) => setDraft({ ...draft, isEstimate: e.target.checked })} />
+                          Estimate
+                        </label>
                         <button type="button" className="btn btn-secondary" onClick={() => commitEdit(m)}>Save</button>
                       </td>
                     </>
@@ -241,6 +273,7 @@ export function Materials() {
                       <td>
                         {m.name}
                         {m.isComposite && <span className="tag tag-accent" style={{ marginLeft: 6 }}>Composite</span>}
+                        {m.isEstimate && <span className="tag tag-neutral" style={{ marginLeft: 6 }} title="Price is a rough estimate, not a tracked cost">Estimate</span>}
                       </td>
                       <td>{m.category ? <span className="tag tag-neutral">{m.category}</span> : <span className="text-muted">—</span>}</td>
                       <td className="text-muted">{m.item || '—'}</td>
@@ -260,7 +293,7 @@ export function Materials() {
                           )}
                           <button type="button" className="btn btn-ghost btn-icon" aria-label="Duplicate" onClick={() => handleDuplicate(m)}><CopyIcon /></button>
                           <button type="button" className="btn btn-ghost btn-icon" aria-label="Edit" onClick={() => startEdit(m)}><EditIcon /></button>
-                          <button type="button" className="btn btn-ghost btn-icon" aria-label="Delete" onClick={() => handleDelete(m.id)}><TrashIcon /></button>
+                          <button type="button" className="btn btn-ghost btn-icon" aria-label="Delete" onClick={() => handleDelete(m.id, m.name)}><TrashIcon /></button>
                         </td>
                       )}
                     </>
@@ -382,6 +415,7 @@ function AddMaterialForm({ materials, onDone, onCancel }: { materials: Material[
   const [unit, setUnit] = useState('');
   const [price, setPrice] = useState('');
   const [isComposite, setIsComposite] = useState(false);
+  const [isEstimate, setIsEstimate] = useState(false);
   const [recipeRows, setRecipeRows] = useState<{ componentMaterialId: string; quantity: string }[]>([]);
   const [recipeMaterialId, setRecipeMaterialId] = useState('');
   const [recipeQty, setRecipeQty] = useState('');
@@ -407,7 +441,7 @@ function AddMaterialForm({ materials, onDone, onCancel }: { materials: Material[
     if (isComposite) {
       if (recipeRows.length === 0) return;
       const material = await dataStore.createMaterial({
-        name: name.trim(), category, item, type, size: size.trim(), unit: unit.trim(), currentPrice: 0, isComposite: true,
+        name: name.trim(), category, item, type, size: size.trim(), unit: unit.trim(), currentPrice: 0, isComposite: true, isEstimate,
       });
       for (const row of recipeRows) {
         await dataStore.addMaterialComponent(material.id, row.componentMaterialId, Number(row.quantity));
@@ -415,7 +449,7 @@ function AddMaterialForm({ materials, onDone, onCancel }: { materials: Material[
     } else {
       const currentPrice = Number(price);
       if (Number.isNaN(currentPrice) || currentPrice < 0) return;
-      await dataStore.createMaterial({ name: name.trim(), category, item, type, size: size.trim(), unit: unit.trim(), currentPrice, isComposite: false });
+      await dataStore.createMaterial({ name: name.trim(), category, item, type, size: size.trim(), unit: unit.trim(), currentPrice, isComposite: false, isEstimate });
     }
     onDone();
   };
@@ -440,6 +474,10 @@ function AddMaterialForm({ materials, onDone, onCancel }: { materials: Material[
       <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
         <input type="checkbox" checked={isComposite} onChange={(e) => setIsComposite(e.target.checked)} />
         Composite
+      </label>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }} title="Price is a rough estimate, not a tracked cost">
+        <input type="checkbox" checked={isEstimate} onChange={(e) => setIsEstimate(e.target.checked)} />
+        Estimate only
       </label>
       {isComposite ? (
         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>

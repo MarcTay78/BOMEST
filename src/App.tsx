@@ -15,7 +15,7 @@ function AppShell() {
     <>
       <AppNav />
       <Routes>
-        <Route path="/" element={<Navigate to="/products" replace />} />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/products" element={<ProductList />} />
         <Route path="/products/new" element={<NewProduct />} />
         <Route path="/products/:id" element={<ProductDetail />} />

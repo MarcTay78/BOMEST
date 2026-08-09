@@ -144,6 +144,9 @@ img { display: block; max-width: 100%; }
 .table td { padding: var(--space-2); border-bottom: 1px solid color-mix(in srgb, var(--color-text) 8%, transparent); }
 .table tbody tr:hover { background: color-mix(in srgb, var(--color-text) 4%, transparent); }
 
+.sticky-filter-bar { position: sticky; top: var(--nav-h, 0px); z-index: 6; background: var(--color-bg); padding: var(--space-2) 0; }
+.table-sticky-head thead th { position: sticky; top: calc(var(--nav-h, 0px) + var(--materials-filter-h, 0px)); background: var(--color-bg); z-index: 5; }
+
 .callout {
   display: flex; gap: 8px; align-items: flex-start; width: fit-content;
   background: var(--color-accent-100); color: var(--color-accent-800);
