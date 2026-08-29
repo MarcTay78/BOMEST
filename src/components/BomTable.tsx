@@ -17,6 +17,7 @@ const COLUMN_COUNT = 9;
 
 export function BomTable({ bomLines, materials, componentsByMaterialId, editable, onAdd, onRemove, onUpdateRemarks }: Props) {
   const materialsById = new Map(materials.map((m) => [m.id, m]));
+  const [category, setCategory] = useState('');
   const [materialId, setMaterialId] = useState('');
   const [qty, setQty] = useState('');
   const [remarks, setRemarks] = useState('');
@@ -33,6 +34,7 @@ export function BomTable({ bomLines, materials, componentsByMaterialId, editable
     const quantity = Number(qty);
     if (!materialId || !quantity || quantity <= 0) return;
     onAdd(materialId, quantity, remarks.trim());
+    setCategory('');
     setMaterialId('');
     setQty('');
     setRemarks('');
@@ -50,8 +52,11 @@ export function BomTable({ bomLines, materials, componentsByMaterialId, editable
     if (calcMode === 'm3') {
       if (!nl || nl <= 0) return;
       setQty(String(round4((nl * nw * nh / MM3_PER_M3) * np)));
+      setRemarks(`${l}x${w}x${h}`);
     } else if (calcMode === 'sqft') {
-      setQty(String(round4((nw * nh / MM2_PER_SQFT) * np)));
+      const areaSqft = nl > 0 ? 2 * (nl * nw + nl * nh + nw * nh) / MM2_PER_SQFT : nw * nh / MM2_PER_SQFT;
+      setQty(String(round4(areaSqft * np)));
+      setRemarks(nl > 0 ? `${l}x${w}x${h}` : `${w}x${h}`);
     }
   };
 
@@ -124,12 +129,28 @@ export function BomTable({ bomLines, materials, componentsByMaterialId, editable
         })()}
         {editable && (
           <tr>
-            <td colSpan={4}>
+            <td colSpan={2}>
+              <select
+                className="input"
+                style={{ minHeight: 32 }}
+                value={category}
+                onChange={(e) => { setCategory(e.target.value); setMaterialId(''); }}
+              >
+                <option value="">All categories…</option>
+                {[...new Set(materials.map((m) => m.category))].sort((a, b) => a.localeCompare(b)).map((c) => (
+                  <option key={c} value={c}>{c || '(none)'}</option>
+                ))}
+              </select>
+            </td>
+            <td colSpan={2}>
               <select className="input" style={{ minHeight: 32 }} value={materialId} onChange={(e) => setMaterialId(e.target.value)}>
                 <option value="">Choose material…</option>
-                {[...materials].sort((a, b) => a.name.localeCompare(b.name)).map((m) => (
-                  <option key={m.id} value={m.id}>{m.name} ({m.unit})</option>
-                ))}
+                {materials
+                  .filter((m) => !category || m.category === category)
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map((m) => (
+                    <option key={m.id} value={m.id}>{m.name} ({m.unit})</option>
+                  ))}
               </select>
             </td>
             <td style={{ textAlign: 'right' }} className="text-muted">
@@ -151,8 +172,8 @@ export function BomTable({ bomLines, materials, componentsByMaterialId, editable
           <tr>
             <td colSpan={COLUMN_COUNT + 1} style={{ padding: '6px 4px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }} className="text-muted">
-                <span>Compute qty from size (mm), always in mm:</span>
-                {calcMode === 'm3' && (
+                <span>Compute qty from size (mm), always in mm{calcMode === 'sqft' ? ' — L blank = flat WxH face, L filled = 6-face box' : ''}:</span>
+                {(calcMode === 'm3' || calcMode === 'sqft') && (
                   <input
                     className="input"
                     style={{ minHeight: 28, width: 70 }}

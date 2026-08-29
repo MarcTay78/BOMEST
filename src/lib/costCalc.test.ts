@@ -168,10 +168,15 @@ describe('computeEffectiveUnit', () => {
     expect(computeEffectiveUnit(material).converted).toBe(true);
   });
 
-  it('a 3-dim size on a sqft material does not convert (wrong dimension count)', () => {
+  it('converts a sqft-priced material with a 3-dim (LxWxH) size using 6-face box surface area', () => {
     const material = { unit: 'sqft', size: '24x590x915', currentPrice: 2 };
     const effective = computeEffectiveUnit(material);
-    expect(effective).toEqual({ price: 2, unit: 'sqft', converted: false });
+    const MM2_PER_SQFT = 92903.04;
+    const [l, w, h] = [24, 590, 915];
+    const expectedSqft = (2 * (l * w + l * h + w * h)) / MM2_PER_SQFT;
+    expect(effective.converted).toBe(true);
+    expect(effective.unit).toBe('pcs');
+    expect(effective.price).toBeCloseTo(expectedSqft * 2);
   });
 });
 

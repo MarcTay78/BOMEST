@@ -50,9 +50,15 @@ export function computeEffectiveUnit(material: Pick<Material, 'unit' | 'size' | 
     }
   }
   if (unit === 'sqft') {
-    const dims = parseSizeMm2(material.size);
-    if (dims) {
-      const [w, h] = dims;
+    const dims3 = parseSizeMm(material.size);
+    if (dims3) {
+      const [l, w, h] = dims3;
+      const areaSqft = (2 * (l * w + l * h + w * h)) / MM2_PER_SQFT;
+      return { price: areaSqft * material.currentPrice, unit: 'pcs', converted: true };
+    }
+    const dims2 = parseSizeMm2(material.size);
+    if (dims2) {
+      const [w, h] = dims2;
       const areaSqft = (w * h) / MM2_PER_SQFT;
       return { price: areaSqft * material.currentPrice, unit: 'pcs', converted: true };
     }
